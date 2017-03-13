@@ -96,22 +96,51 @@ public class IncludeFilterExecuterImplTest extends TestCase {
     return targets;
   }
 
+  /**
+   * use the max dictionary value to calculate dimension column size
+   * 
+   * @param value
+   * @param size
+   * @return byte[]
+   */
+  private int calculateDimensionColumnSize(int maxDictionryValue) {
+
+    int dimColumnSize = 1;
+    maxDictionryValue = maxDictionryValue >> 8;
+    while (maxDictionryValue > 0) {
+      dimColumnSize++;
+      maxDictionryValue = maxDictionryValue >> 8;
+    }
+
+    return dimColumnSize;
+  }
+  
   @Test
   public void testPerformance() {
 
     // dimension's data number in a blocklet, usually default is 120000
     int dataChunkSize = 120000; 
     //  repeat query times in the test
-    int queryTimes = 5;    
+    int queryTimes = 1;    
     // repeated times for a dictionary value
-    int repeatTimes = 200;
-    //filtered value count in a blocklet
-    int filteredValueCnt = 800;
+    int repeatTimes = 1;
+   
+    // filtered value count in a blocklet
+    int filteredValueCnt = 120000;
     comparePerformance(dataChunkSize, filteredValueCnt, queryTimes, repeatTimes);
-    
-    filteredValueCnt = 100;
+
+    filteredValueCnt = 60000;
+    comparePerformance(dataChunkSize, filteredValueCnt, queryTimes, repeatTimes);
+
+    filteredValueCnt = 6000;
+    comparePerformance(dataChunkSize, filteredValueCnt, queryTimes, repeatTimes);
+
+    filteredValueCnt = 600;
+    comparePerformance(dataChunkSize, filteredValueCnt, queryTimes, repeatTimes);
+
+    filteredValueCnt = 60;
     // set big repeat value for test dimension dictionary size is 1
-    repeatTimes = 2000;
+    //repeatTimes = 2000;
     comparePerformance(dataChunkSize, filteredValueCnt, queryTimes, repeatTimes);
 
   }
@@ -129,7 +158,7 @@ public class IncludeFilterExecuterImplTest extends TestCase {
     // repeated times for a dictionary value
     int repeatTimes = 20;
     //filtered value count in a blocklet
-    int filteredValueCnt = 1;
+    int filteredValueCnt = 1; 
     comparePerformance(dataChunkSize, filteredValueCnt, queryTimes, repeatTimes);
     
     filteredValueCnt = 0;
@@ -153,23 +182,22 @@ public class IncludeFilterExecuterImplTest extends TestCase {
     long newTime = 0;
     
     // used to generate filter value
-    int baseFilteredValue = 100;
+    int baseFilteredValue = (dataChunkSize - filteredValueCnt) / 2;
+    
     // column dictionary size
-    int dimColumnSize = 2;
-    if ((dataChunkSize / repeatTimes) <= 255 && (baseFilteredValue+filteredValueCnt) <= 255) {
-      dimColumnSize = 1;
-    }
+    int dimColumnSize = calculateDimensionColumnSize(dataChunkSize/repeatTimes +1);
     System.out.println("dimColumnSize: " + dimColumnSize);
     
     FixedLengthDimensionDataChunk dimensionColumnDataChunk;
     DimColumnExecuterFilterInfo dim = new DimColumnExecuterFilterInfo();
 
     byte[] dataChunk = new byte[dataChunkSize * dimColumnSize];
+    int dataChunkValue = 0;
     for (int i = 0; i < dataChunkSize; i++) {
       if (i % repeatTimes == 0) {
-        repeatTimes++;
+        dataChunkValue++;
       }
-      byte[] data = transferIntToByteArr(repeatTimes, dimColumnSize);      
+      byte[] data = transferIntToByteArr(dataChunkValue, dimColumnSize);      
       for(int j =0 ; j< dimColumnSize;j++){      
         dataChunk[dimColumnSize * i + j] = data[j];
       }
@@ -276,8 +304,10 @@ public class IncludeFilterExecuterImplTest extends TestCase {
     int repeatTimes = 200;
     //filtered value count in a blocklet
     int filteredValueCnt = 800;
+    // used to generate filter value
+    int baseFilteredValue = 100;
     // column dictionary size
-    int dimColumnSize = 2;
+    int dimColumnSize = calculateDimensionColumnSize(dataChunkSize/repeatTimes +1);
     FixedLengthDimensionDataChunk dimensionColumnDataChunk;
     DimColumnExecuterFilterInfo dim = new DimColumnExecuterFilterInfo();
 
@@ -296,7 +326,7 @@ public class IncludeFilterExecuterImplTest extends TestCase {
 
     byte[][] filterKeys = new byte[filteredValueCnt][2];
     for (int k = 0; k < filteredValueCnt; k++) {
-      filterKeys[k] = transferIntToByteArr(100 + k, dimColumnSize);
+      filterKeys[k] = transferIntToByteArr(baseFilteredValue + k, dimColumnSize);
     }
     dim.setFilterKeys(filterKeys);
 
