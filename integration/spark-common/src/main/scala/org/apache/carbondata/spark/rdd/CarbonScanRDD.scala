@@ -27,6 +27,7 @@ import org.apache.hadoop.mapreduce._
 import org.apache.hadoop.mapreduce.task.TaskAttemptContextImpl
 import org.apache.spark._
 import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.catalyst.expressions.{Ascending, Descending, NamedExpression, SortDirection, SortOrder}
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.hive.DistributionUtil
 
@@ -35,7 +36,9 @@ import org.apache.carbondata.core.datastore.block.Distributable
 import org.apache.carbondata.core.metadata.AbsoluteTableIdentifier
 import org.apache.carbondata.core.metadata.schema.table.CarbonTable
 import org.apache.carbondata.core.scan.expression.Expression
+import org.apache.carbondata.core.scan.model.QueryDimension
 import org.apache.carbondata.core.scan.model.QueryModel
+import org.apache.carbondata.core.scan.model.SortOrderType
 import org.apache.carbondata.core.stats.{QueryStatistic, QueryStatisticsConstants, QueryStatisticsRecorder}
 import org.apache.carbondata.core.util.CarbonTimeStatisticsFactory
 import org.apache.carbondata.hadoop._
@@ -51,6 +54,10 @@ class CarbonScanRDD(
     @transient sc: SparkContext,
     columnProjection: CarbonProjection,
     filterExpression: Expression,
+    limit: Int,
+    sorts: Seq[SortOrder] = Nil,
+    groupingExpressions: Seq[org.apache.spark.sql.catalyst.expressions.Expression],
+    aggregateExpressions: Seq[NamedExpression],
     identifier: AbsoluteTableIdentifier,
     @transient carbonTable: CarbonTable)
   extends RDD[InternalRow](sc, Nil) {
@@ -263,6 +270,34 @@ class CarbonScanRDD(
     CarbonInputFormat.setTablePath(conf, identifier.appendWithLocalPrefix(identifier.getTablePath))
     CarbonInputFormat.setFilterPredicates(conf, filterExpression)
     CarbonInputFormat.setColumnProjection(conf, columnProjection)
+    CarbonInputFormat.setLimitExpression(conf, limit)
+    CarbonInputFormat.setAggegatesExpression(conf, groupingExpressions.asJava,
+        aggregateExpressions.asJava)
+    // TODO
+    // var orderedDims = new ArrayList[QueryDimension];
+    def getCarbonSortDirection(sortDirection: SortDirection) = {
+      sortDirection match {
+        case Descending => SortOrderType.DSC
+        case Ascending => SortOrderType.ASC
+        case _ => SortOrderType.NONE
+      }
+    }
+    // var orderedDims1 = sorts.map(x => x.child.prettyString).asJava
+    var orderedDims = sorts.map {
+      x =>
+        var sortColRef = x.child.references
+        var col = sortColRef.iterator.next()
+        var colName = col.name
+        var qd = new QueryDimension(colName)
+        qd.setSortOrder(getCarbonSortDirection(x.direction))
+        // var dimensionByName = carbonTable.getDimensionByName(
+        // carbonTable.getFactTableName(), tName)
+       // qd.setDimension(dimensionByName)
+        // var queryId :IntegerType= x.child.dataType.asInstanceOf[IntegerType]
+        // qd.setQueryOrder(queryId.integral.to)
+        qd
+    }.asJava
+    CarbonInputFormat.setSortsExpression(conf, orderedDims)
     format
   }
 

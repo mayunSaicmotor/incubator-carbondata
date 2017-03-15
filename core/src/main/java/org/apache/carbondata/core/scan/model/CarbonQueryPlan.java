@@ -66,6 +66,30 @@ public class CarbonQueryPlan implements Serializable {
       new ArrayList<QueryMeasure>(CarbonCommonConstants.CONSTANT_SIZE_TEN);
 
   /**
+   * Limit
+   */
+  private int limit = -1;
+  private List<QueryDimension> sortDimensions;
+  private List groupingExpressions;
+  private List aggregateExpressions;
+
+  public List getGroupingExpressions() {
+    return groupingExpressions;
+  }
+
+  public void setGroupingExpressions(List groupingExpressions) {
+    this.groupingExpressions = groupingExpressions;
+  }
+
+  public List getAggregateExpressions() {
+    return aggregateExpressions;
+  }
+
+  public void setAggregateExpressions(List aggregateExpressions) {
+    this.aggregateExpressions = aggregateExpressions;
+  }
+
+  /**
    * expression
    */
   private Expression expression;
@@ -144,11 +168,33 @@ public class CarbonQueryPlan implements Serializable {
     this.queryId = queryId;
   }
 
+  /**
+   * @return the limit
+   */
+  public int getLimit() {
+    return limit;
+  }
+
+  /**
+   * @param limit the limit to set
+   */
+  public void setLimit(int limit) {
+    this.limit = limit;
+  }
+
   public boolean isRawDetailQuery() {
     return rawDetailQuery;
   }
 
   public void setRawDetailQuery(boolean rawDetailQuery) {
     this.rawDetailQuery = rawDetailQuery;
+  }
+
+  public List<QueryDimension> getSortDimemsions() {
+    return sortDimensions;
+  }
+
+  public void setSortDimemsions(List<QueryDimension> sortDimensions) {
+    this.sortDimensions = sortDimensions;
   }
 }

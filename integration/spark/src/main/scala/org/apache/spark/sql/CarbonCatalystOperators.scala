@@ -84,6 +84,16 @@ case class CarbonDictionaryCatalystDecoder(
   override def output: Seq[Attribute] = child.output
 }
 
+case class CarbonPushDownToScan(
+    order : Seq[SortOrder], 
+    limit : Expression,
+   // groupingExpressions: Seq[Expression],
+    //aggregateExpressions: Seq[NamedExpression],
+    child: LogicalPlan
+ ) extends UnaryNode {
+override def output: Seq[Attribute] = child.output
+}
+
 abstract class CarbonProfile(attributes: Seq[Attribute]) extends Serializable {
   def isEmpty: Boolean = attributes.isEmpty
 }

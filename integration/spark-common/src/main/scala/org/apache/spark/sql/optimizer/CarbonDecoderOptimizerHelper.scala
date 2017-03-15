@@ -148,7 +148,12 @@ class CarbonPlanMarker {
         }
       }
     }
-    markerStack.peek().set
+    // TODO
+    if (!markerStack.empty()) {
+      markerStack.peek().set
+    } else {
+      new util.HashSet[AttributeReferenceWrapper]()
+    }
   }
 
 }

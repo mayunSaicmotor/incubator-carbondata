@@ -284,6 +284,8 @@ public abstract class AbstractQueryExecutor<E> implements QueryExecutor<E> {
     blockExecutionInfo.setAggregatorInfo(getAggregatorInfoForBlock(queryModel, blockIndex));
     // setting whether raw record query or not
     blockExecutionInfo.setRawRecordDetailQuery(queryModel.isForcedDetailRawQuery());
+    // setting the limit
+    blockExecutionInfo.setLimit(queryModel.getLimit());
     // setting the masked byte of the block which will be
     // used to update the unpack the older block keys
     blockExecutionInfo.setMaskedByteForBlock(maksedByte);
@@ -353,6 +355,15 @@ public abstract class AbstractQueryExecutor<E> implements QueryExecutor<E> {
     } else {
       blockExecutionInfo.setAllSelectedDimensionBlocksIndexes(new int[0][0]);
     }
+
+    // TODO setting all sorted dimension
+    blockExecutionInfo.setAllSortDimensionBlocksIndexes(QueryUtil
+        .getDimensionsBlockIndexes(queryModel.getSortDimensions(),
+            segmentProperties.getDimensionOrdinalToBlockMapping(),
+            expressionDimensions,
+            queryProperties.complexFilterDimension,
+            allProjectionListDimensionIdexes));
+
     // list of measures to be projected
     List<Integer> allProjectionListMeasureIdexes = new ArrayList<>();
     int[] measureBlockIndexes = QueryUtil
