@@ -27,13 +27,13 @@ import org.apache.carbondata.hadoop.CarbonProjection
 import org.apache.carbondata.spark.CarbonFilters
 import org.apache.carbondata.spark.rdd.CarbonScanRDD
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.Attribute
 import org.apache.spark.sql.catalyst.expressions.AttributeReference
 import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.catalyst.expressions.NamedExpression
 import org.apache.spark.sql.catalyst.expressions.SortOrder
 import org.apache.spark.sql.catalyst.expressions.UnsafeProjection
+import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.execution.LeafNode
 import org.apache.spark.sql.hive.CarbonMetastore
 
@@ -42,8 +42,8 @@ case class CarbonScan(
     relationRaw: CarbonRelation,
     dimensionPredicatesRaw: Seq[Expression],
     useUnsafeCoversion: Boolean = true,
-    sorts: Seq[SortOrder]=Nil, 
-    limitValue: Int = 0, 
+    sorts: Seq[QueryDimension] = Nil,
+    limitValue: Int = 0,
     groupingExpressions: Seq[Expression],
     aggregateExpressions: Seq[NamedExpression])(@transient val ocRaw: SQLContext) extends LeafNode {
   val carbonTable = relationRaw.metaData.carbonTable

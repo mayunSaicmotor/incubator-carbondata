@@ -55,7 +55,7 @@ class CarbonScanRDD(
     columnProjection: CarbonProjection,
     filterExpression: Expression,
     limit: Int,
-    sorts: Seq[SortOrder] = Nil,
+    sorts: Seq[QueryDimension] = Nil,
     groupingExpressions: Seq[org.apache.spark.sql.catalyst.expressions.Expression],
     aggregateExpressions: Seq[NamedExpression],
     identifier: AbsoluteTableIdentifier,
@@ -273,31 +273,7 @@ class CarbonScanRDD(
     CarbonInputFormat.setLimitExpression(conf, limit)
     CarbonInputFormat.setAggegatesExpression(conf, groupingExpressions.asJava,
         aggregateExpressions.asJava)
-    // TODO
-    // var orderedDims = new ArrayList[QueryDimension];
-    def getCarbonSortDirection(sortDirection: SortDirection) = {
-      sortDirection match {
-        case Descending => SortOrderType.DSC
-        case Ascending => SortOrderType.ASC
-        case _ => SortOrderType.NONE
-      }
-    }
-    // var orderedDims1 = sorts.map(x => x.child.prettyString).asJava
-    var orderedDims = sorts.map {
-      x =>
-        var sortColRef = x.child.references
-        var col = sortColRef.iterator.next()
-        var colName = col.name
-        var qd = new QueryDimension(colName)
-        qd.setSortOrder(getCarbonSortDirection(x.direction))
-        // var dimensionByName = carbonTable.getDimensionByName(
-        // carbonTable.getFactTableName(), tName)
-       // qd.setDimension(dimensionByName)
-        // var queryId :IntegerType= x.child.dataType.asInstanceOf[IntegerType]
-        // qd.setQueryOrder(queryId.integral.to)
-        qd
-    }.asJava
-    CarbonInputFormat.setSortsExpression(conf, orderedDims)
+    CarbonInputFormat.setSortsExpression(conf, sorts.asJava)
     format
   }
 

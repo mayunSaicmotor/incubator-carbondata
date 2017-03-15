@@ -22,7 +22,7 @@ import org.apache.carbondata.core.util.CarbonProperties
 import org.apache.carbondata.examples.util.ExampleUtils
 import java.util.Date
 
-object SaicTest {
+object SaicAggregateSpecial {
   def main(args: Array[String]) {
     val cc = ExampleUtils.createCarbonContext("CarbonExample")
     val testData = ExampleUtils.currentPath + "/src/main/resources/rx5_parquet_10m.csv"
@@ -41,11 +41,11 @@ object SaicTest {
           select 
            vin,
             gnsstime,
-            sum(vehsyspwrmod)
+            sum(vehsyspwrmod) as sumveh
 
           from rx5_tbox_parquet_all 
            group by vin, gnsstime
-          order by vin 
+          order by sumveh 
           limit 2000
            """).show(500000)
            

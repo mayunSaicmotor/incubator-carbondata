@@ -73,7 +73,7 @@ case class TungstenMergeSort(
      */
     def preparePartition(): UnsafeExternalRowSorter = {
       //var start = System.currentTimeMillis()
-      
+
       val ordering = newOrdering(sortOrder, childOutput)
 
       // The comparator for comparing prefix
@@ -94,10 +94,10 @@ case class TungstenMergeSort(
       if (testSpillFrequency > 0) {
         sorter.setTestSpillFrequency(testSpillFrequency)
       }
-      
+
       //var end = System.currentTimeMillis()
       //println("preparePartition for sort: " + (end - start))
-      
+
       sorter
     }
 
@@ -108,20 +108,20 @@ case class TungstenMergeSort(
         sorter: UnsafeExternalRowSorter,
         parentIterator: Iterator[InternalRow]): Iterator[InternalRow] = {
      // var start = System.currentTimeMillis()
-      //val sortedIterator = sorter.sort(parentIterator.asInstanceOf[Iterator[UnsafeRow]])
-//      taskContext.internalMetricsToAccumulators(
-//        InternalAccumulator.PEAK_EXECUTION_MEMORY).add(sorter.getPeakMemoryUsage)
+      // val sortedIterator = sorter.sort(parentIterator.asInstanceOf[Iterator[UnsafeRow]])
+    // taskContext.internalMetricsToAccumulators(
+    // InternalAccumulator.PEAK_EXECUTION_MEMORY).add(sorter.getPeakMemoryUsage)
 
-      //var end = System.currentTimeMillis()
+      // var end = System.currentTimeMillis()
      // println("sort query time: " + (end - start))
       parentIterator
     }
 
     // Note: we need to set up the external sorter in each partition before computing
     // the parent partition, so we cannot simply use `mapPartitions` here (SPARK-9709).
-    //new MapPartitionsWithPreparationRDD[InternalRow, InternalRow, UnsafeExternalRowSorter](
-      //child.execute(), preparePartition, executePartition, preservesPartitioning = true)
-    
+    // new MapPartitionsWithPreparationRDD[InternalRow, InternalRow, UnsafeExternalRowSorter](
+      // child.execute(), preparePartition, executePartition, preservesPartitioning = true)
+
     null
   }
 
@@ -135,21 +135,21 @@ object TungstenMergeSort {
    // UnsafeExternalRowSorter.supportsSchema(schema)
     true
   }
+
+ /*   case class TakeOrdered(limit: Int, sortOrder: Seq[SortOrder], child: SparkPlan)
+                      (@transient sqlContext: SQLContext) extends UnaryNode {
+  override def otherCopyArgs = sqlContext :: Nil
+
+  override def output = child.output
+
+  @transient
+  lazy val ordering = new RowOrdering(sortOrder)
   
- /*   case class TakeOrdered(limit: Int, sortOrder: Seq[SortOrder], child: SparkPlan)  
-                      (@transient sqlContext: SQLContext) extends UnaryNode {  
-  override def otherCopyArgs = sqlContext :: Nil  
+  override def executeCollect() = child.execute().map(_.copy()).takeOrdered(limit)(ordering)
   
-  override def output = child.output  
-  
-  @transient  
-  lazy val ordering = new RowOrdering(sortOrder) //这里是通过RowOrdering来实现排序的  
-  
-  override def executeCollect() = child.execute().map(_.copy()).takeOrdered(limit)(ordering)  
-  
-  // TODO: Terminal split should be implemented differently from non-terminal split.  
-  // TODO: Pick num splits based on |limit|.  
-  override def execute() = sqlContext.sparkContext.makeRDD(executeCollect(), 1)  
+  // TODO: Terminal split should be implemented differently from non-terminal split.
+  // TODO: Pick num splits based on |limit|.
+  override def execute() = sqlContext.sparkContext.makeRDD(executeCollect(), 1)
 }*/
-  
+
 }
