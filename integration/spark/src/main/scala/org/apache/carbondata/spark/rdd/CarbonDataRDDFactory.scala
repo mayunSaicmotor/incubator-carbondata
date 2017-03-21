@@ -704,7 +704,7 @@ object CarbonDataRDDFactory {
               val index = taskNo + 1
               uniqueLoadStatusId = carbonLoadModel.getTableName +
                                    CarbonCommonConstants.UNDERSCORE +
-                                   index
+                                   (index + "_0")
 
               // convert timestamp
               val timeStampInLong = updateModel.get.updatedTimeStamp + ""
@@ -973,8 +973,13 @@ object CarbonDataRDDFactory {
 
         shutDownDictionaryServer(carbonLoadModel, result)
 
-        LOGGER.audit("Data load is successful for " +
-            s"${ carbonLoadModel.getDatabaseName }.${ carbonLoadModel.getTableName }")
+        if (CarbonCommonConstants.STORE_LOADSTATUS_PARTIAL_SUCCESS.equals(loadStatus)) {
+          LOGGER.audit("Data load is partially successful for " +
+                       s"${ carbonLoadModel.getDatabaseName }.${ carbonLoadModel.getTableName }")
+        } else {
+          LOGGER.audit("Data load is successful for " +
+                       s"${ carbonLoadModel.getDatabaseName }.${ carbonLoadModel.getTableName }")
+        }
         try {
           // compaction handling
           handleSegmentMerging(tableCreationTime)
