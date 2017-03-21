@@ -42,7 +42,7 @@ import org.apache.carbondata.core.util.path.CarbonTablePath;
  */
 public abstract class AbstractScannedResult {
 
-  private static final LogService LOGGER =
+  protected static final LogService LOGGER =
       LogServiceFactory.getLogService(AbstractScannedResult.class.getName());
   /**
    * current row number
@@ -50,6 +50,16 @@ public abstract class AbstractScannedResult {
   protected int currentRow = -1;
 
   protected int pageCounter;
+  
+  
+  public int getPageCounter() {
+    return pageCounter;
+  }
+
+  public void setPageCounter(int pageCounter) {
+    this.pageCounter = pageCounter;
+  }
+
   /**
    * row mapping indexes
    */
@@ -57,16 +67,16 @@ public abstract class AbstractScannedResult {
   /**
    * key size of the fixed length column
    */
-  private int fixedLengthKeySize;
+  protected int fixedLengthKeySize;
   /**
    * total number of rows per page
    */
-  private int[] numberOfRows;
+  protected int[] numberOfRows;
 
   /**
    * Total number of rows.
    */
-  private int totalNumberOfRows;
+  protected int totalNumberOfRows;
   /**
    * to keep track of number of rows process
    */
@@ -107,21 +117,21 @@ public abstract class AbstractScannedResult {
   /**
    *
    */
-  private Map<Integer, GenericQueryType> complexParentIndexToQueryMap;
+  protected Map<Integer, GenericQueryType> complexParentIndexToQueryMap;
 
-  private int totalDimensionsSize;
+  protected int totalDimensionsSize;
 
   /**
    * blockedId which will be blockId + blocklet number in the block
    */
-  private String blockletId;
+  protected String blockletId;
 
-  private long rowId;
+  protected long rowId;
 
   /**
    * parent block indexes
    */
-  private int[] complexParentBlockIndexes;
+  protected int[] complexParentBlockIndexes;
 
   protected BlockletLevelDeleteDeltaDataCache blockletDeleteDeltaCache;
 
@@ -144,6 +154,10 @@ public abstract class AbstractScannedResult {
   public void setDimensionChunks(DimensionColumnDataChunk[][] dataChunks) {
     this.dataChunks = dataChunks;
   }
+  
+  public DimensionColumnDataChunk[][] getDimensionChunks() {
+    return this.dataChunks;
+  }
 
   /**
    * Below method will be used to set the measure column chunks
@@ -152,6 +166,10 @@ public abstract class AbstractScannedResult {
    */
   public void setMeasureChunks(MeasureColumnDataChunk[][] measureDataChunks) {
     this.measureDataChunks = measureDataChunks;
+  }
+  
+  public MeasureColumnDataChunk[][] getMeasureChunks( ) {
+    return this.measureDataChunks;
   }
 
   public void setRawColumnChunks(DimensionRawColumnChunk[] rawColumnChunks) {
@@ -563,7 +581,7 @@ public abstract class AbstractScannedResult {
    *
    * @return valid row id
    */
-  public abstract int getCurrenrRowId();
+  public abstract int getCurrentRowId();
 
   /**
    * @return dictionary key array for all the dictionary dimension

@@ -56,7 +56,7 @@ public class BlockletBTreeLeafNode extends AbstractBTreeLeafNode {
    *                     this will be used during query execution when we can
    *                     give some leaf node of a btree to one executor some to other
    */
-  public BlockletBTreeLeafNode(BTreeBuilderInfo builderInfos, int leafIndex, long nodeNumber) {
+  public BlockletBTreeLeafNode(BTreeBuilderInfo builderInfos, int leafIndex, long nodeNumber, String nodeIdPrefix) {
     // get a lead node min max
     BlockletMinMaxIndex minMaxIndex =
         builderInfos.getFooterList().get(0).getBlockletList().get(leafIndex).getBlockletIndex()
@@ -80,8 +80,12 @@ public class BlockletBTreeLeafNode extends AbstractBTreeLeafNode {
             builderInfos.getFooterList().get(0).getBlockletList().get(leafIndex),
             builderInfos.getFooterList().get(0).getBlockInfo().getTableBlockInfo().getFilePath());
     this.nodeNumber = nodeNumber;
+<<<<<<< master
     this.numberOfPages =
         builderInfos.getFooterList().get(0).getBlockletList().get(leafIndex).getNumberOfPages();
+=======
+    this.nodeId = nodeIdPrefix + nodeNumber;
+>>>>>>> CARBONDATA-754
   }
 
   /**
@@ -138,4 +142,35 @@ public class BlockletBTreeLeafNode extends AbstractBTreeLeafNode {
   @Override public int numberOfPages() {
     return numberOfPages;
   }
+  
+  
+  //TODO
+/*  *//**
+   * Below method will be used to get the dimension chunks
+   *
+   * @param fileReader   file reader to read the chunks from file
+   * @param blockIndexes indexes of the blocks need to be read
+   * @return dimension data chunks
+   *//*
+  @Override public DimensionRawColumnChunk[] getDimensionChunksForSort(FileHolder fileReader, int[] sortDimentionblockIndexes, int limit, boolean descSortFlg) {
+    return dimensionChunksReader.readDimensionChunksForSort(sortDimentionblockIndexes, fileReader, this.numberOfKeys, limit, descSortFlg);
+  }
+  
+
+  @Override
+  public DimensionRawColumnChunk getDimensionChunk(FileHolder fileReader, int blockIndex, int limit,
+        int maxLogicalRowId, boolean descSortFlg) {
+    
+    return dimensionChunksReader.readDimensionChunkForFilter(fileReader, blockIndex, limit, maxLogicalRowId, descSortFlg);
+  }
+  
+  
+
+@Override
+public MeasureRawColumnChunk getMeassureChunk(FileHolder fileReader, int blockIndex, int limit) {
+    return measureColumnChunkReader.readMeasureChunk(limit, fileReader, blockIndex);
+}*/
+
+
+  
 }

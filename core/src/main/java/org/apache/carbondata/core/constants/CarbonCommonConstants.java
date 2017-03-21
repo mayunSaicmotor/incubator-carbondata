@@ -1191,6 +1191,11 @@ public final class CarbonCommonConstants {
 
   public static final String CARBON_BAD_RECORDS_ACTION_DEFAULT = "FORCE";
 
+  public static final int MAX_SIZE_FOR_GET_MAXINT_FROM_ARRAY = 5000;
+  public static final String MAX_STR = "~";
+  public static final String MIN_STR = "";
+  public static final boolean SNAPPY_UNCOMRESS_NO_LIMIT_FLG = true;
+
   private CarbonCommonConstants() {
   }
 }

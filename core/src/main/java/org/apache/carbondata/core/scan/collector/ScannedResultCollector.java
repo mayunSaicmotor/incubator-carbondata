@@ -19,6 +19,7 @@ package org.apache.carbondata.core.scan.collector;
 import java.util.List;
 
 import org.apache.carbondata.core.scan.result.AbstractScannedResult;
+import org.apache.carbondata.core.scan.result.AbstractScannedSortResult;
 import org.apache.carbondata.core.scan.result.vector.CarbonColumnarBatch;
 
 /**
@@ -40,4 +41,7 @@ public interface ScannedResultCollector {
    * @param columnarBatch
    */
   void collectVectorBatch(AbstractScannedResult scannedResult, CarbonColumnarBatch columnarBatch);
+  
+  //For sort by dimention
+  List<Object[]> collectSortData(AbstractScannedSortResult scannedResult, int batchSize, String stopKey);
 }

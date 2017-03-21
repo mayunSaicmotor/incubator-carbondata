@@ -15,46 +15,43 @@
  * limitations under the License.
  */
 
-package org.apache.carbondata.examples
+package org.apache.carbondata.examples.saic
 
 import org.apache.carbondata.core.constants.CarbonCommonConstants
 import org.apache.carbondata.core.util.CarbonProperties
 import org.apache.carbondata.examples.util.ExampleUtils
+import java.util.Date
 
-object CarbonExample {
+object SaicAggregate{
   def main(args: Array[String]) {
     val cc = ExampleUtils.createCarbonContext("CarbonExample")
-    val testData = ExampleUtils.currentPath + "/src/main/resources/data.csv"
+    val testData = ExampleUtils.currentPath + "/src/main/resources/rx5_parquet_10m.csv"
 
     // Specify timestamp format based on raw data
     CarbonProperties.getInstance()
-      .addProperty(CarbonCommonConstants.CARBON_TIMESTAMP_FORMAT, "yyyy/MM/dd")
+      .addProperty(CarbonCommonConstants.CARBON_TIMESTAMP_FORMAT, "yyyy-MM-dd hh:mm:ss")
 
-    cc.sql("DROP TABLE IF EXISTS t3")
+      
+  
+    var start = System.currentTimeMillis()
 
     cc.sql("""
-           CREATE TABLE IF NOT EXISTS t3
-           (ID Int, date Timestamp, country String,
-           name String, phonetype String, serialname String, salary Int,
-           name1 String, name2 String, name3 String, name4 String, name5 String, name6 String,name7 String,name8 String
+          select 
+           vin,
+            gnsstime,
+            sum(vehsyspwrmod)
+
+          from rx5_tbox_parquet_all 
+          where vin in ('LSJA24U62HS017126', 'LSJA24U60GG141090')
+           group by vin, gnsstime
+          order by vin 
+          limit 2000
+           """).show(500000)
            
-           )
-           STORED BY 'carbondata'
-           """)
+        
+                  var end = System.currentTimeMillis()
+      print(" limit 2000 query time: " + (end - start))
+      
 
-    cc.sql(s"""
-           LOAD DATA LOCAL INPATH '$testData' into table t3
-           """)
-
-
-           
-    cc.sql("""
-           SELECT country, count(salary) AS amount
-           FROM t3
-           WHERE country IN ('china','france')
-           GROUP BY country
-           """).show()
-  cc.sql("desc t3").show();
-    //cc.sql("DROP TABLE IF EXISTS t3")
   }
 }

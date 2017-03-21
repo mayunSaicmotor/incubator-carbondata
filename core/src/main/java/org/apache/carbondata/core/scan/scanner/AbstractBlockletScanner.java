@@ -27,8 +27,10 @@ import org.apache.carbondata.core.mutate.data.BlockletDeleteDeltaCacheLoader;
 import org.apache.carbondata.core.mutate.data.DeleteDeltaCacheLoaderIntf;
 import org.apache.carbondata.core.scan.executor.infos.BlockExecutionInfo;
 import org.apache.carbondata.core.scan.expression.exception.FilterUnsupportedException;
+import org.apache.carbondata.core.scan.model.SortOrderType;
 import org.apache.carbondata.core.scan.processor.BlocksChunkHolder;
 import org.apache.carbondata.core.scan.result.AbstractScannedResult;
+import org.apache.carbondata.core.scan.result.AbstractScannedSortResult;
 import org.apache.carbondata.core.scan.result.impl.NonFilterQueryScannedResult;
 import org.apache.carbondata.core.stats.QueryStatistic;
 import org.apache.carbondata.core.stats.QueryStatisticsConstants;
@@ -166,5 +168,29 @@ public abstract class AbstractBlockletScanner implements BlockletScanner {
   @Override public boolean isScanRequired(BlocksChunkHolder blocksChunkHolder) throws IOException {
     // For non filter it is always true
     return true;
+  }
+  
+  @Override
+  public AbstractScannedSortResult[] scanBlockletForSort(BlocksChunkHolder blocksChunkHolder,
+      SortOrderType orderType) throws IOException, FilterUnsupportedException {
+    // TODO Auto-generated method stub
+    return null;
+  }
+
+  @Override
+  public AbstractScannedResult getScannedResultAfterProcessFilter() {
+    // TODO Auto-generated method stub
+    return null;
+  }
+  
+  @Override
+  public void readBlockletForSort(BlocksChunkHolder blocksChunkHolder) throws IOException {
+    // TODO Auto-generated method stub
+    
+  }
+  
+  @Override public void readBlockletForLazyLoad(AbstractScannedSortResult scannedResult) throws IOException {
+    // TODO Auto-generated method stub
+    
   }
 }

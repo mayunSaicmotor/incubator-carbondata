@@ -39,6 +39,15 @@ import org.apache.carbondata.core.constants.CarbonCommonConstants
 import org.apache.carbondata.core.stats.QueryStatistic
 import org.apache.carbondata.core.util.CarbonTimeStatisticsFactory
 import org.apache.carbondata.spark.{CarbonAliasDecoderRelation, CarbonFilters}
+import org.apache.carbondata.core.scan.model.QueryDimension
+import org.apache.carbondata.core.scan.model.SortOrderType
+
+ case class CarbonMergeSort(
+    order: Seq[SortOrder],
+    global: Boolean,
+    child: LogicalPlan) extends UnaryNode {
+  override def output: Seq[Attribute] = child.output
+}
 
 /**
  * Carbon Optimizer to add dictionary decoder.
@@ -187,6 +196,12 @@ class ResolveCarbonFunctions(relations: Seq[CarbonDecoderRelation])
       return plan
     }
     var decoder = false
+    var limitExpr: Expression = null
+    var groupingExpressions: Seq[Expression] = Nil
+    var aggregateExpressions: Seq[NamedExpression] = Nil
+    var sortOrders: Seq[QueryDimension] = Nil;
+    // var innerDecoder = false
+
     val mapOfNonCarbonPlanNodes = new java.util.HashMap[LogicalPlan, ExtraNodeInfo]
     fillNodeInfo(plan, mapOfNonCarbonPlanNodes)
     val aliasMap = CarbonAliasDecoderRelation()
@@ -228,18 +243,87 @@ class ResolveCarbonFunctions(relations: Seq[CarbonDecoderRelation])
           }
           var child = sort.child
           if (attrsOnSort.size() > 0 && !child.isInstanceOf[Sort]) {
+            // innerDecoder = true;
             child = CarbonDictionaryTempDecoder(attrsOnSort,
               new util.HashSet[AttributeReferenceWrapper](), sort.child)
           }
+          // TODO
+          var sortOptimizeFlg = false
+          var findLogicalRelation: LogicalPlan = null;
+          var tmpChild = sort.child
+          while (tmpChild != null) {
+            if (tmpChild.isInstanceOf[Filter]) {
+              tmpChild = tmpChild.asInstanceOf[Filter].child
+            } else if (tmpChild.isInstanceOf[Project]) {
+              tmpChild = tmpChild.asInstanceOf[Project].child
+            } else if (tmpChild.isInstanceOf[LogicalRelation]) {
+              findLogicalRelation = tmpChild.asInstanceOf[LogicalRelation]
+              tmpChild = null
+            } else if (tmpChild.isInstanceOf[Aggregate]) {
+              tmpChild = tmpChild.asInstanceOf[Aggregate].child
+            } else {
+              // TODO
+              tmpChild = null
+            }
+          }
+          if(findLogicalRelation != null){
+            var carbonTable = findLogicalRelation.asInstanceOf[LogicalRelation].
+            relation.asInstanceOf[CarbonDatasourceRelation].carbonRelation.metaData.carbonTable
+            def getCarbonSortDirection(sortDirection: SortDirection) = {
+              sortDirection match {
+                case Descending => SortOrderType.DSC
+                case Ascending => SortOrderType.ASC
+                case _ => SortOrderType.NONE
+              }
+            }
+
+            sortOrders = sort.order.map {
+              x =>
+                var sortColRef = x.child.references
+                var col = sortColRef.iterator.next()
+                var colName = col.name
+
+                val carbonDimension =
+                  carbonTable.getDimensionByName(carbonTable.getFactTableName, colName)
+                if (carbonDimension == null) {
+                  null
+                } else {
+                  var qd = new QueryDimension(colName)
+                  qd.setSortOrder(getCarbonSortDirection(x.direction))
+                  qd.setDimension(carbonDimension)
+                  qd
+                }
+            }
+
+            // currently optimize sort only for order by 1 dimension
+            if (sortOrders.size == 1 && sortOrders.iterator.next() != null) {
+              sortOptimizeFlg = true
+            }
+          }
+
+          var sortNode: LogicalPlan = null
+          if (sortOptimizeFlg) {
+            sortNode = CarbonMergeSort(sort.order, sort.global, child)
+          } else {
+            sortOrders = Nil;
+            sortNode = Sort(sort.order, sort.global, child)
+          }
+
           if (!decoder) {
             decoder = true
             CarbonDictionaryTempDecoder(new util.HashSet[AttributeReferenceWrapper](),
               new util.HashSet[AttributeReferenceWrapper](),
-              Sort(sort.order, sort.global, child),
+              sortNode,
               isOuter = true)
           } else {
-            Sort(sort.order, sort.global, child)
+            sortNode
           }
+
+        // case limit: Limit if !decoder && limit.child.isInstanceOf[Sort] =>
+        case limit: Limit =>
+          //var sort = limit.child.asInstanceOf[Sort]
+          limitExpr = limit.limitExpr
+          limit
 
         case union: Union
           if !(union.left.isInstanceOf[CarbonDictionaryTempDecoder] ||
@@ -263,12 +347,14 @@ class ResolveCarbonFunctions(relations: Seq[CarbonDecoderRelation])
             leftPlan = CarbonDictionaryTempDecoder(leftCondAttrs,
               new util.HashSet[AttributeReferenceWrapper](),
               union.left)
+              // innerDecoder = true;
           }
           if (hasCarbonRelation(rightPlan) && rightCondAttrs.size() > 0 &&
               !rightPlan.isInstanceOf[CarbonDictionaryCatalystDecoder]) {
             rightPlan = CarbonDictionaryTempDecoder(rightCondAttrs,
               new util.HashSet[AttributeReferenceWrapper](),
               union.right)
+              // innerDecoder = true;
           }
           if (!decoder) {
             decoder = true
@@ -281,6 +367,8 @@ class ResolveCarbonFunctions(relations: Seq[CarbonDecoderRelation])
           }
 
         case agg: Aggregate if !agg.child.isInstanceOf[CarbonDictionaryTempDecoder] =>
+          groupingExpressions = agg.groupingExpressions
+          aggregateExpressions = agg.aggregateExpressions
           val attrsOndimAggs = new util.HashSet[AttributeReferenceWrapper]
           agg.aggregateExpressions.map {
             case attr: AttributeReference =>
@@ -304,6 +392,7 @@ class ResolveCarbonFunctions(relations: Seq[CarbonDecoderRelation])
             child = CarbonDictionaryTempDecoder(attrsOndimAggs,
               new util.HashSet[AttributeReferenceWrapper](),
               agg.child)
+              // innerDecoder = true;
           }
           if (!decoder) {
             decoder = true
@@ -333,6 +422,7 @@ class ResolveCarbonFunctions(relations: Seq[CarbonDecoderRelation])
             child = CarbonDictionaryTempDecoder(attrsOnExpand,
               new util.HashSet[AttributeReferenceWrapper](),
               expand.child)
+              // innerDecoder = true;
           }
           if (!decoder) {
             decoder = true
@@ -361,6 +451,7 @@ class ResolveCarbonFunctions(relations: Seq[CarbonDecoderRelation])
             child = CarbonDictionaryTempDecoder(attrsOnConds,
               new util.HashSet[AttributeReferenceWrapper](),
               filter.child)
+              // innerDecoder = true;
           }
 
           if (!decoder) {
@@ -406,12 +497,14 @@ class ResolveCarbonFunctions(relations: Seq[CarbonDecoderRelation])
               leftPlan = CarbonDictionaryTempDecoder(leftCondAttrs,
                 new util.HashSet[AttributeReferenceWrapper](),
                 j.left)
+                // innerDecoder = true;
             }
             if (rightCondAttrs.size() > 0 &&
                 !rightPlan.isInstanceOf[CarbonDictionaryCatalystDecoder]) {
               rightPlan = CarbonDictionaryTempDecoder(rightCondAttrs,
                 new util.HashSet[AttributeReferenceWrapper](),
                 j.right)
+                // innerDecoder = true;
             }
             if (!decoder) {
               decoder = true
@@ -444,6 +537,7 @@ class ResolveCarbonFunctions(relations: Seq[CarbonDecoderRelation])
             child = CarbonDictionaryTempDecoder(attrsOnProjects,
               new util.HashSet[AttributeReferenceWrapper](),
               p.child)
+              // innerDecoder = true;
           }
           if (!decoder) {
             decoder = true
@@ -501,6 +595,7 @@ class ResolveCarbonFunctions(relations: Seq[CarbonDecoderRelation])
             child = CarbonDictionaryTempDecoder(attrsOnProjects,
               new util.HashSet[AttributeReferenceWrapper](),
               wd.child)
+              // innerDecoder = true;
           }
           if (!decoder) {
             decoder = true
@@ -541,13 +636,28 @@ class ResolveCarbonFunctions(relations: Seq[CarbonDecoderRelation])
 
     val processor = new CarbonDecoderProcessor
     processor.updateDecoders(processor.getDecoderList(transFormedPlan))
-    updateProjection(updateTempDecoder(transFormedPlan, aliasMap, attrMap))
+    updateProjection(updateTempDecoder(transFormedPlan,
+        aliasMap,
+        attrMap,
+        sortOrders,
+        limitExpr,
+        groupingExpressions,
+        aggregateExpressions
+        // innerDecoder
+        ))
   }
 
   private def updateTempDecoder(plan: LogicalPlan,
       aliasMap: CarbonAliasDecoderRelation,
-      attrMap: java.util.HashMap[AttributeReferenceWrapper, CarbonDecoderRelation]):
+      attrMap: java.util.HashMap[AttributeReferenceWrapper, CarbonDecoderRelation],
+      order : Seq[QueryDimension],
+      limit : Expression,
+      groupingExpressions: Seq[Expression],
+      aggregateExpressions: Seq[NamedExpression]
+      // innerDecoder: Boolean
+      ):
   LogicalPlan = {
+    var addedPushDownFlg = false;
     var allAttrsNotDecode: util.Set[AttributeReferenceWrapper] =
       new util.HashSet[AttributeReferenceWrapper]()
     val marker = new CarbonPlanMarker
@@ -571,6 +681,14 @@ class ResolveCarbonFunctions(relations: Seq[CarbonDecoderRelation])
         }
       case cd: CarbonDictionaryCatalystDecoder =>
         cd
+      case sort: CarbonMergeSort =>
+        val sortExprs = sort.order.map { s =>
+          s.transform {
+            case attr: AttributeReference =>
+              updateDataType(attr, attrMap, allAttrsNotDecode, aliasMap)
+          }.asInstanceOf[SortOrder]
+        }
+        CarbonMergeSort(sortExprs, sort.global, sort.child)
       case sort: Sort =>
         val sortExprs = sort.order.map { s =>
           s.transform {
@@ -604,7 +722,16 @@ class ResolveCarbonFunctions(relations: Seq[CarbonDecoderRelation])
           case attr: AttributeReference =>
             updateDataType(attr, attrMap, allAttrsNotDecode, aliasMap)
         }
-        Filter(filterExps, filter.child)
+        //TODO
+        if (!addedPushDownFlg && (filter.child.isInstanceOf[Project]
+          || filter.child.isInstanceOf[LogicalRelation])) {
+          var pushdown = CarbonPushDownToScan(order, limit,
+              groupingExpressions,aggregateExpressions, Filter(filterExps, filter.child))
+          addedPushDownFlg = true;
+          pushdown
+        } else {
+          Filter(filterExps, filter.child)
+        }
       case j: Join =>
         marker.pushBinaryMarker(allAttrsNotDecode)
         j
@@ -618,7 +745,15 @@ class ResolveCarbonFunctions(relations: Seq[CarbonDecoderRelation])
               updateDataType(attr, attrMap, allAttrsNotDecode, aliasMap)
           }
         }.asInstanceOf[Seq[NamedExpression]]
-        Project(prExps, p.child)
+        if (!addedPushDownFlg && (p.child.isInstanceOf[LogicalRelation]
+          || p.child.isInstanceOf[Filter])) {
+          var pushdown = CarbonPushDownToScan(order, limit,
+              groupingExpressions, aggregateExpressions, Project(prExps, p.child))
+          addedPushDownFlg = true;
+          pushdown
+        } else {
+          Project(prExps, p.child)
+        }
       case wd: Window if relations.nonEmpty =>
         val prExps = wd.projectList.map { prExp =>
           prExp.transform {
@@ -648,7 +783,14 @@ class ResolveCarbonFunctions(relations: Seq[CarbonDecoderRelation])
 
       case l: LogicalRelation if l.relation.isInstanceOf[CarbonDatasourceRelation] =>
         allAttrsNotDecode = marker.revokeJoin()
-        l
+        if (!addedPushDownFlg) {
+          var pushdown = CarbonPushDownToScan(order, limit,
+              groupingExpressions, aggregateExpressions, l)
+          addedPushDownFlg = true;
+          pushdown
+        } else {
+          l
+        }
       case others => others
     }
   }

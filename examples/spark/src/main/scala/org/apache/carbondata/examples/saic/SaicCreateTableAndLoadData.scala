@@ -15,46 +15,57 @@
  * limitations under the License.
  */
 
-package org.apache.carbondata.examples
+package org.apache.carbondata.examples.saic
 
 import org.apache.carbondata.core.constants.CarbonCommonConstants
 import org.apache.carbondata.core.util.CarbonProperties
 import org.apache.carbondata.examples.util.ExampleUtils
 
-object CarbonExample {
+object SaicCreateTableAndLoadData {
   def main(args: Array[String]) {
     val cc = ExampleUtils.createCarbonContext("CarbonExample")
-    val testData = ExampleUtils.currentPath + "/src/main/resources/data.csv"
+    val testData = ExampleUtils.currentPath + "/src/main/resources/rx5_parquet_100m.csv"
 
     // Specify timestamp format based on raw data
     CarbonProperties.getInstance()
-      .addProperty(CarbonCommonConstants.CARBON_TIMESTAMP_FORMAT, "yyyy/MM/dd")
+      .addProperty(CarbonCommonConstants.CARBON_TIMESTAMP_FORMAT, "yyyy-MM-dd hh:mm:ss")
 
-    cc.sql("DROP TABLE IF EXISTS t3")
+    cc.sql("DROP TABLE IF EXISTS rx5_tbox_parquet_all")
 
     cc.sql("""
-           CREATE TABLE IF NOT EXISTS t3
-           (ID Int, date Timestamp, country String,
-           name String, phonetype String, serialname String, salary Int,
-           name1 String, name2 String, name3 String, name4 String, name5 String, name6 String,name7 String,name8 String
-           
+           CREATE TABLE IF NOT EXISTS rx5_tbox_parquet_all
+           (
+           vin String,
+           gnsstime Timestamp,
+           vehsyspwrmod Int,
+           vehdoorfrontpas Int,
+           vehdoorfrontdrv Int,
+           vehdoorrearleft Int,
+           vehdoorrearright Int,
+           vehbonnet Int,
+           vehboot Int,
+           vehwindowfrontleft Int,
+           vehwindowrearleft Int,
+           vehwindowfrontright Int,
+           vehwindowrearright Int,
+           vehsunroof Int,
+           vehcruiseactive Int,
+           vehcruiseenabled Int,
+           vehseatbeltdrv Int 
            )
            STORED BY 'carbondata'
            """)
 
     cc.sql(s"""
-           LOAD DATA LOCAL INPATH '$testData' into table t3
+           LOAD DATA LOCAL INPATH '$testData' into table rx5_tbox_parquet_all
            """)
-
 
            
     cc.sql("""
-           SELECT country, count(salary) AS amount
-           FROM t3
-           WHERE country IN ('china','france')
-           GROUP BY country
+           SELECT count(vin) cnt
+           FROM rx5_tbox_parquet_all
            """).show()
-  cc.sql("desc t3").show();
-    //cc.sql("DROP TABLE IF EXISTS t3")
+  cc.sql("desc rx5_tbox_parquet_all").show();
+    //cc.sql("DROP TABLE IF EXISTS rx5_tbox_parquet_all")
   }
 }

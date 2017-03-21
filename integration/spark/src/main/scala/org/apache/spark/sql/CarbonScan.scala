@@ -17,25 +17,35 @@
 
 package org.apache.spark.sql
 
-import scala.collection.JavaConverters._
+import scala.collection.JavaConverters.asScalaSetConverter
 import scala.collection.mutable.ArrayBuffer
 
-import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions._
-import org.apache.spark.sql.execution.LeafNode
-import org.apache.spark.sql.hive.CarbonMetastore
-
-import org.apache.carbondata.core.scan.model._
+import org.apache.carbondata.core.scan.model.CarbonQueryPlan
+import org.apache.carbondata.core.scan.model.QueryDimension
+import org.apache.carbondata.core.scan.model.QueryMeasure
 import org.apache.carbondata.hadoop.CarbonProjection
 import org.apache.carbondata.spark.CarbonFilters
 import org.apache.carbondata.spark.rdd.CarbonScanRDD
+import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.catalyst.expressions.Attribute
+import org.apache.spark.sql.catalyst.expressions.AttributeReference
+import org.apache.spark.sql.catalyst.expressions.Expression
+import org.apache.spark.sql.catalyst.expressions.NamedExpression
+import org.apache.spark.sql.catalyst.expressions.SortOrder
+import org.apache.spark.sql.catalyst.expressions.UnsafeProjection
+import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.execution.LeafNode
+import org.apache.spark.sql.hive.CarbonMetastore
 
 case class CarbonScan(
     var columnProjection: Seq[Attribute],
     relationRaw: CarbonRelation,
     dimensionPredicatesRaw: Seq[Expression],
-    useUnsafeCoversion: Boolean = true)(@transient val ocRaw: SQLContext) extends LeafNode {
+    useUnsafeCoversion: Boolean = true,
+    sorts: Seq[QueryDimension] = Nil,
+    limitValue: Int = 0,
+    groupingExpressions: Seq[Expression],
+    aggregateExpressions: Seq[NamedExpression])(@transient val ocRaw: SQLContext) extends LeafNode {
   val carbonTable = relationRaw.metaData.carbonTable
   val selectedDims = scala.collection.mutable.MutableList[QueryDimension]()
   val selectedMsrs = scala.collection.mutable.MutableList[QueryMeasure]()
@@ -126,6 +136,10 @@ case class CarbonScan(
       ocRaw.sparkContext,
       projection,
       buildCarbonPlan.getFilterExpression,
+      limitValue,
+      sorts,
+      groupingExpressions,
+      aggregateExpressions,
       carbonTable.getAbsoluteTableIdentifier,
       carbonTable
     )

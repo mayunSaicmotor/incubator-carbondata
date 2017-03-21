@@ -55,11 +55,12 @@ public class BlockletBTreeBuilder extends AbstractBTreeBuilder {
         new ArrayList<List<IndexKey>>(CarbonCommonConstants.DEFAULT_COLLECTION_SIZE);
     List<IndexKey> leafNSKeyList = null;
     long nodeNumber = 0;
+    String nodeIdPrefix = segmentBuilderInfos.getFooterList().get(0).getBlockInfo().getBlockUniqueName();
     for (int index = 0;
          index < segmentBuilderInfos.getFooterList().get(0).getBlockletList()
              .size(); index++) {
       // creating a leaf node
-      curNode = new BlockletBTreeLeafNode(segmentBuilderInfos, index, nodeNumber++);
+      curNode = new BlockletBTreeLeafNode(segmentBuilderInfos, index, nodeNumber++, nodeIdPrefix);
       totalNumberOfTuple +=
           segmentBuilderInfos.getFooterList().get(0).getBlockletList().get(index)
               .getNumberOfRows();

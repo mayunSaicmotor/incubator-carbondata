@@ -32,7 +32,19 @@ public final class ByteUtil {
   private ByteUtil() {
 
   }
+  /**
+   * Converts byte[] to column dictionary integer value
+   */
+  public static int convertedToIntDictionary(byte[] dictionary, int columnSize) {
 
+    int dict = 0;
+    for (int i = 0; i < columnSize; i++) {
+      dict <<= 8;
+      dict ^= dictionary[i] & 0xFF;
+    }
+    return dict;
+  }
+  
   /**
    * Compare method for bytes
    *

@@ -15,46 +15,44 @@
  * limitations under the License.
  */
 
-package org.apache.carbondata.examples
+package org.apache.carbondata.examples.saic
 
 import org.apache.carbondata.core.constants.CarbonCommonConstants
 import org.apache.carbondata.core.util.CarbonProperties
 import org.apache.carbondata.examples.util.ExampleUtils
+import java.util.Date
 
-object CarbonExample {
+object SaicAggregateSpecial {
   def main(args: Array[String]) {
     val cc = ExampleUtils.createCarbonContext("CarbonExample")
-    val testData = ExampleUtils.currentPath + "/src/main/resources/data.csv"
+    val testData = ExampleUtils.currentPath + "/src/main/resources/rx5_parquet_10m.csv"
 
     // Specify timestamp format based on raw data
     CarbonProperties.getInstance()
-      .addProperty(CarbonCommonConstants.CARBON_TIMESTAMP_FORMAT, "yyyy/MM/dd")
+      .addProperty(CarbonCommonConstants.CARBON_TIMESTAMP_FORMAT, "yyyy-MM-dd hh:mm:ss")
 
-    cc.sql("DROP TABLE IF EXISTS t3")
-
-    cc.sql("""
-           CREATE TABLE IF NOT EXISTS t3
-           (ID Int, date Timestamp, country String,
-           name String, phonetype String, serialname String, salary Int,
-           name1 String, name2 String, name3 String, name4 String, name5 String, name6 String,name7 String,name8 String
-           
-           )
-           STORED BY 'carbondata'
-           """)
-
-    cc.sql(s"""
-           LOAD DATA LOCAL INPATH '$testData' into table t3
-           """)
-
+      
+  
+    var start = System.currentTimeMillis()
 
            
-    cc.sql("""
-           SELECT country, count(salary) AS amount
-           FROM t3
-           WHERE country IN ('china','france')
-           GROUP BY country
-           """).show()
-  cc.sql("desc t3").show();
-    //cc.sql("DROP TABLE IF EXISTS t3")
+           
+        cc.sql("""
+          select 
+           vin,
+            gnsstime,
+            sum(vehsyspwrmod) as sumveh
+
+          from rx5_tbox_parquet_all 
+           group by vin, gnsstime
+          order by sumveh 
+          limit 2000
+           """).show(500000)
+           
+        
+                  var end = System.currentTimeMillis()
+      print(" limit 2000 query time: " + (end - start))
+      
+
   }
 }

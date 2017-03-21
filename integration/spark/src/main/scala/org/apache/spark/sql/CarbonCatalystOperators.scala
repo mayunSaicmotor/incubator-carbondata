@@ -26,6 +26,7 @@ import org.apache.spark.sql.optimizer.CarbonDecoderRelation
 import org.apache.spark.sql.types._
 
 import org.apache.carbondata.spark.CarbonAliasDecoderRelation
+import org.apache.carbondata.core.scan.model.QueryDimension
 
 /**
  * Top command
@@ -82,6 +83,16 @@ case class CarbonDictionaryCatalystDecoder(
     isOuter: Boolean,
     child: LogicalPlan) extends UnaryNode {
   override def output: Seq[Attribute] = child.output
+}
+
+case class CarbonPushDownToScan(
+    order : Seq[QueryDimension], 
+    limit : Expression,
+    groupingExpressions: Seq[Expression],
+    aggregateExpressions: Seq[NamedExpression],
+    child: LogicalPlan
+ ) extends UnaryNode {
+override def output: Seq[Attribute] = child.output
 }
 
 abstract class CarbonProfile(attributes: Seq[Attribute]) extends Serializable {

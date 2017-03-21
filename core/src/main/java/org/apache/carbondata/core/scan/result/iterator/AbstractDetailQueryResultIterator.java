@@ -57,7 +57,7 @@ public abstract class AbstractDetailQueryResultIterator<E> extends CarbonIterato
   /**
    * execution info of the block
    */
-  protected List<BlockExecutionInfo> blockExecutionInfos;
+  public List<BlockExecutionInfo> blockExecutionInfos;
 
   /**
    * file reader which will be used to execute the query
@@ -73,7 +73,25 @@ public abstract class AbstractDetailQueryResultIterator<E> extends CarbonIterato
   /**
    * number of cores which can be used
    */
-  private int batchSize;
+  protected int batchSize;
+
+  /**
+   * number of row need to return
+   */
+  protected int limit = 0;
+
+  protected boolean limitFlg = false;
+
+  public synchronized void decreaseLimit(int count) {
+    if (limitFlg) {
+      // LOGGER.info("limit before: " + limit);
+      // LOGGER.info("count: " + count);
+      limit = limit - count;
+      // LOGGER.info("limit after: " + limit);
+    }
+
+  }
+
   /**
    * queryStatisticsModel to store query statistics object
    */
@@ -93,6 +111,12 @@ public abstract class AbstractDetailQueryResultIterator<E> extends CarbonIterato
     } else {
       batchSize = CarbonCommonConstants.DETAIL_QUERY_BATCH_SIZE_DEFAULT;
     }
+<<<<<<< master
+=======
+    
+    this.blocksChunkHolder = new BlocksChunkHolder(infos.get(0).getTotalNumberDimensionBlock(),
+        infos.get(0).getTotalNumberOfMeasureBlock());
+>>>>>>> CARBONDATA-754
     this.recorder = queryModel.getStatisticsRecorder();
     this.blockExecutionInfos = infos;
     this.fileReader = FileFactory.getFileHolder(
@@ -102,12 +126,26 @@ public abstract class AbstractDetailQueryResultIterator<E> extends CarbonIterato
     initQueryStatiticsModel();
   }
 
+  public void resetBatchSizeByLimit(int limitValue) {
+    limit = limitValue;
+    // process limit push down
+    if(limit > 0 ){
+        limitFlg =true;
+        
+        if(batchSize > limit){
+
+            batchSize =  limit;
+        }
+    }
+  }
+
   private void intialiseInfos() {
     for (BlockExecutionInfo blockInfo : blockExecutionInfos) {
       DataRefNodeFinder finder = new BTreeDataRefNodeFinder(blockInfo.getEachColumnValueSize());
       DataRefNode startDataBlock = finder
           .findFirstDataBlock(blockInfo.getDataBlock().getDataRefNode(), blockInfo.getStartKey());
-      while (startDataBlock.nodeNumber() < blockInfo.getStartBlockletIndex()) {
+      // TODO TODO
+      while (startDataBlock.nodeNumber() != blockInfo.getStartBlockletIndex()) {
         startDataBlock = startDataBlock.getNextDataRefNode();
       }
 

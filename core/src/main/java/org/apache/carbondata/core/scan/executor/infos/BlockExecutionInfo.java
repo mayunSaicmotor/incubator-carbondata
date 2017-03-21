@@ -81,6 +81,19 @@ public class BlockExecutionInfo {
   private int totalNumberOfMeasureBlock;
 
   /**
+   * sorted dimension indexes
+   */
+  private int[] allSortDimensionBlocksIndexes;
+
+  public int[] getAllSortDimensionBlocksIndexes() {
+    return allSortDimensionBlocksIndexes;
+  }
+
+  public void setAllSortDimensionBlocksIndexes(int[] allSortDimensionBlocksIndexes) {
+    this.allSortDimensionBlocksIndexes = allSortDimensionBlocksIndexes;
+  }
+
+  /**
    * will be used to read the dimension block from file
    */
   private int[][] allSelectedDimensionBlocksIndexes;
@@ -643,4 +656,35 @@ public class BlockExecutionInfo {
     this.projectionListMeasureIndexes = projectionListMeasureIndexes;
   }
 
+  /**
+   * this to handle limit query in case of detail query we are pushing down
+   * the limit to executor level so based on the number of limit we can
+   * process only that many records
+   */
+  private int limit;
+
+  /**
+   * @return the limit
+   */
+  public int getLimit() {
+    return limit;
+  }
+
+  /**
+   * @param limit the limit to set
+   */
+  public void setLimit(int limit) {
+    this.limit = limit;
+  }
+  
+  private boolean sortFlg = false;
+
+  public boolean isSortFlg() {
+    return sortFlg;
+  }
+
+  public void setSortFlg(boolean sortFlg) {
+    this.sortFlg = sortFlg;
+  }
+  
 }

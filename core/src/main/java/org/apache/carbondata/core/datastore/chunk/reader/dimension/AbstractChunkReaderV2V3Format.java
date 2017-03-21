@@ -63,9 +63,15 @@ public abstract class AbstractChunkReaderV2V3Format extends AbstractChunkReader 
     // read the column chunk based on block index and add
     DimensionRawColumnChunk[] dataChunks =
         new DimensionRawColumnChunk[dimensionChunksOffset.size()];
+    readRawDimensionChunks(fileReader, blockletIndexes, dataChunks);
+    return dataChunks;
+  }
+
+  public void readRawDimensionChunks(final FileHolder fileReader,
+      final int[][] blockletIndexes, DimensionRawColumnChunk[] dataChunks) throws IOException {
     // if blocklet index is empty then return empry data chunk
     if (blockletIndexes.length == 0) {
-      return dataChunks;
+      return;
     }
     DimensionRawColumnChunk[] groupChunk = null;
     int index = 0;
@@ -95,7 +101,14 @@ public abstract class AbstractChunkReaderV2V3Format extends AbstractChunkReader 
         dataChunks[j] = groupChunk[index++];
       }
     }
-    return dataChunks;
+    //return dataChunks;
+  }
+  
+  @Override
+  public void readRawDimensionChunksForLeft(FileHolder fileReader, int[][] blockletIndexes,
+      DimensionRawColumnChunk[] dataChunks)
+      throws IOException{
+    readRawDimensionChunks(fileReader, blockletIndexes, dataChunks);
   }
 
   /**

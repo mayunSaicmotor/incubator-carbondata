@@ -16,7 +16,11 @@
  */
 package org.apache.carbondata.core.datastore.chunk.reader.dimension;
 
+import java.io.IOException;
+
 import org.apache.carbondata.core.constants.CarbonCommonConstants;
+import org.apache.carbondata.core.datastore.FileHolder;
+import org.apache.carbondata.core.datastore.chunk.impl.DimensionRawColumnChunk;
 import org.apache.carbondata.core.datastore.chunk.reader.DimensionColumnChunkReader;
 import org.apache.carbondata.core.datastore.compression.Compressor;
 import org.apache.carbondata.core.datastore.compression.CompressorFactory;
@@ -94,5 +98,12 @@ public abstract class AbstractChunkReader implements DimensionColumnChunkReader 
       columnIndexTemp[invertedIndex[i]] = i;
     }
     return columnIndexTemp;
+  }
+  
+  //TODO
+  public void readRawDimensionChunksForLeft(FileHolder fileReader, int[][] blockletIndexes,
+      DimensionRawColumnChunk[] dataChunks)
+      throws IOException{
+    
   }
 }

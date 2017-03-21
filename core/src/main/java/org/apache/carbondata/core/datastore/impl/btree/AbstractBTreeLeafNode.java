@@ -46,6 +46,11 @@ public abstract class AbstractBTreeLeafNode implements BTreeNode {
    * node number
    */
   protected long nodeNumber;
+  
+  /**
+   * node number
+   */
+  protected String nodeId;
 
   /**
    * Next node of the leaf
@@ -238,5 +243,37 @@ public abstract class AbstractBTreeLeafNode implements BTreeNode {
    */
   public BlockletLevelDeleteDeltaDataCache getDeleteDeltaDataCache() {
     return deleteDeltaDataCache;
+  }
+  
+  
+  
+  
+
+
+  @Override
+  public DimensionRawColumnChunk[] getDimensionChunksForSort(FileHolder fileReader,
+      int[] sortDimensionBlockIndexes, int limit, boolean descSortFlg) {
+    // TODO Auto-generated method stub
+    return null;
+  }
+
+  @Override
+  public DimensionRawColumnChunk getDimensionChunk(FileHolder fileReader, int blockIndexes,
+      int limit) {
+    // TODO Auto-generated method stub
+    return null;
+  }
+
+  @Override
+  public DimensionRawColumnChunk getDimensionChunk(FileHolder fileReader, int blockIndexes,
+      int limit, int maxLogicalRowId, boolean descSortFlg) {
+    // TODO Auto-generated method stub
+    return null;
+  }
+
+  @Override
+  public String getNodeId() {
+
+    return nodeId;
   }
 }

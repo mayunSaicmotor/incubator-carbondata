@@ -57,6 +57,17 @@ public interface DimensionDataChunkStore {
    * @return inverted index based on row id passed
    */
   int getInvertedIndex(int rowId);
+/*  int[] getInvertedIndex();
+  int[] getInvertedIndexReverse();*/
+  
+  
+  /**
+   * Below method will be used to get the inverted index
+   *
+   * @param rowId row id
+   * @return inverted index based on row id passed
+   */
+  int getInvertedIndexReverse(int rowId);
 
   /**
    * Below method will be used to get the surrogate key of the

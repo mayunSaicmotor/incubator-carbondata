@@ -18,6 +18,7 @@
 package org.apache.carbondata.core.datastore.chunk.store.impl.unsafe;
 
 import org.apache.carbondata.core.constants.CarbonCommonConstants;
+import org.apache.carbondata.core.datastore.chunk.impl.AbstractDimensionDataChunk;
 import org.apache.carbondata.core.datastore.chunk.store.DimensionDataChunkStore;
 import org.apache.carbondata.core.memory.CarbonUnsafe;
 import org.apache.carbondata.core.memory.MemoryAllocatorFactory;
@@ -169,4 +170,23 @@ public abstract class UnsafeAbstractDimensionDataChunkStore implements Dimension
     throw new UnsupportedOperationException("Operation not supported");
   }
 
+  
+  
+  /**
+   * Below method will be used to get the inverted index
+   *
+   * @param rowId row id
+   * @return inverted index based on row id passed
+   */
+  @Override public int getInvertedIndexReverse(int rowId) {
+    for(int i = 0; i < dataLength; i++){
+      int index = CarbonUnsafe.unsafe.getInt(dataPageMemoryBlock.getBaseObject(),
+          dataPageMemoryBlock.getBaseOffset() + dataLength + (i
+              * CarbonCommonConstants.INT_SIZE_IN_BYTE));
+      if(rowId == index){
+        return i;
+      }
+    }
+    return -1;
+  }
 }

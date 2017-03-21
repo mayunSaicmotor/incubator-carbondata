@@ -61,6 +61,30 @@ public class QueryModel implements Serializable {
    */
   private List<QueryDimension> queryDimension;
   /**
+   * list of dimension in which sorting is applied
+   */
+  private List<QueryDimension> sortDimensions;
+  private List groupingExpressions;
+  private List aggregateExpressions;
+
+
+  public List getGroupingExpressions() {
+    return groupingExpressions;
+  }
+
+  public void setGroupingExpressions(List groupingExpressions) {
+    this.groupingExpressions = groupingExpressions;
+  }
+
+  public List getAggregateExpressions() {
+    return aggregateExpressions;
+  }
+
+  public void setAggregateExpressions(List aggregateExpressions) {
+    this.aggregateExpressions = aggregateExpressions;
+  }
+
+  /**
    * list of measure selected in query
    */
   private List<QueryMeasure> queryMeasures;
@@ -72,6 +96,12 @@ public class QueryModel implements Serializable {
    * filter tree
    */
   private FilterResolverIntf filterExpressionResolverTree;
+
+  /**
+   * in case of lime query we need to know how many
+   * records will passed from executor
+   */
+  private int limit;
 
   /**
    * table block information in which query will be executed
@@ -109,6 +139,9 @@ public class QueryModel implements Serializable {
   public QueryModel() {
     tableBlockInfos = new ArrayList<TableBlockInfo>();
     queryDimension = new ArrayList<QueryDimension>();
+    sortDimensions = new ArrayList<QueryDimension>();
+    groupingExpressions = new ArrayList();
+    aggregateExpressions = new ArrayList();
     queryMeasures = new ArrayList<QueryMeasure>();
     invalidSegmentIds = new ArrayList<>();
   }
@@ -268,6 +301,25 @@ public class QueryModel implements Serializable {
   }
 
   /**
+   * @return the sortDimension
+   */
+  public List<QueryDimension> getSortDimensions() {
+    return sortDimensions;
+  }
+
+  /**
+   * @param sortDimension the sortDimension to set
+   */
+  public void setSortDimensions(List<QueryDimension> sortDimensions, CarbonTable carbonTable) {
+    for (QueryDimension qd : sortDimensions) {
+      CarbonDimension dimensionByName = carbonTable
+          .getDimensionByName(carbonTable.getFactTableName(), qd.getColumnName());
+      qd.setDimension(dimensionByName);
+    }
+    this.sortDimensions = sortDimensions;
+  }
+
+  /**
    * @return the filterEvaluatorTree
    */
   public FilterResolverIntf getFilterExpressionResolverTree() {
@@ -297,6 +349,21 @@ public class QueryModel implements Serializable {
    */
   public CarbonTable getTable() {
     return table;
+  }
+
+
+  /**
+   * @return the limit
+   */
+  public int getLimit() {
+    return limit;
+  }
+
+  /**
+   * @param limit the limit to set
+   */
+  public void setLimit(int limit) {
+    this.limit = limit;
   }
 
   /**

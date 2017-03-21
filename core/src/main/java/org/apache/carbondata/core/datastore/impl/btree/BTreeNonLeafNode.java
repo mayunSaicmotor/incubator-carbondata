@@ -254,4 +254,31 @@ public class BTreeNonLeafNode implements BTreeNode {
     // TODO Auto-generated method stub
     throw new UnsupportedOperationException("Unsupported operation");
   }
+
+  @Override
+  public String getNodeId() {
+    // TODO Auto-generated method stub
+    return null;
+  }
+
+  @Override
+  public DimensionRawColumnChunk[] getDimensionChunksForSort(FileHolder fileReader,
+      int[] sortDimensionBlockIndexes, int limit, boolean descSortFlg) {
+    // TODO Auto-generated method stub
+    return null;
+  }
+
+  @Override
+  public DimensionRawColumnChunk getDimensionChunk(FileHolder fileReader, int blockIndexes,
+      int limit) {
+    // TODO Auto-generated method stub
+    return null;
+  }
+
+  @Override
+  public DimensionRawColumnChunk getDimensionChunk(FileHolder fileReader, int blockIndexes,
+      int limit, int maxLogicalRowId, boolean descSortFlg) {
+    // TODO Auto-generated method stub
+    return null;
+  }
 }
