@@ -59,9 +59,9 @@ class CarbonLateDecodeRule extends Rule[LogicalPlan] with PredicateHelper {
     relations = collectCarbonRelation(plan)
     if (relations.nonEmpty && !isOptimized(plan)) {
       // In case scalar subquery skip the transformation and update the flag.
-      if (relations.exists(_.carbonRelation.isSubquery)) {
-        relations.foreach(p => p.carbonRelation.isSubquery = false)
-        LOGGER.info("Skip CarbonOptimizer for scalar sub query")
+      if (relations.exists(_.carbonRelation.isSubquery.nonEmpty)) {
+        relations.foreach(p => p.carbonRelation.isSubquery.remove(0))
+        LOGGER.info("Skip CarbonOptimizer for scalar/predicate sub query")
         return plan
       }
       LOGGER.info("Starting to optimize plan")
@@ -145,6 +145,16 @@ class CarbonLateDecodeRule extends Rule[LogicalPlan] with PredicateHelper {
 
     def addTempDecoder(currentPlan: LogicalPlan): LogicalPlan = {
       currentPlan match {
+        case limit@GlobalLimit(_, LocalLimit(_, child: Sort)) =>
+          if (!decoder) {
+            decoder = true
+            CarbonDictionaryTempDecoder(new util.HashSet[AttributeReferenceWrapper](),
+              new util.HashSet[AttributeReferenceWrapper](),
+              limit,
+              isOuter = true)
+          } else {
+            limit
+          }
         case sort: Sort if !sort.child.isInstanceOf[CarbonDictionaryTempDecoder] =>
           val attrsOnSort = new util.HashSet[AttributeReferenceWrapper]()
           sort.order.map { s =>
@@ -201,7 +211,6 @@ class CarbonLateDecodeRule extends Rule[LogicalPlan] with PredicateHelper {
           agg.aggregateExpressions.map {
             case attr: AttributeReference =>
             case a@Alias(attr: AttributeReference, name) =>
-            case Alias(AggregateExpression(Count(Seq(attr: AttributeReference)), _, _, _), _) =>
             case aggExp: AggregateExpression =>
               aggExp.transform {
                 case aggExp: AggregateExpression =>
@@ -513,10 +522,20 @@ class CarbonLateDecodeRule extends Rule[LogicalPlan] with PredicateHelper {
         }
         Aggregate(grpExps, aggExps, agg.child)
       case expand: Expand =>
-        expand.transformExpressions {
+        val ex = expand.transformExpressions {
           case attr: AttributeReference =>
             updateDataType(attr, attrMap, allAttrsNotDecode, aliasMap)
         }
+        // Update the datatype of literal type as per the output type, otherwise codegen fails.
+        val updatedProj = ex.projections.map { projs =>
+          projs.zipWithIndex.map { case(p, index) =>
+            p.transform {
+              case l: Literal if l.dataType != ex.output(index).dataType =>
+                Literal(l.value, ex.output(index).dataType)
+            }
+          }
+        }
+        Expand(updatedProj, ex.output, ex.child)
       case filter: Filter =>
         filter
       case j: Join =>
