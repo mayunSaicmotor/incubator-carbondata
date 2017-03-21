@@ -28,6 +28,7 @@ import org.apache.carbondata.core.scan.executor.infos.BlockExecutionInfo;
 import org.apache.carbondata.core.scan.executor.infos.KeyStructureInfo;
 import org.apache.carbondata.core.scan.executor.util.QueryUtil;
 import org.apache.carbondata.core.scan.result.AbstractScannedResult;
+import org.apache.carbondata.core.scan.result.AbstractScannedSortResult;
 import org.apache.carbondata.core.scan.result.vector.CarbonColumnarBatch;
 import org.apache.carbondata.core.scan.wrappers.ByteArrayWrapper;
 
@@ -88,7 +89,7 @@ public abstract class AbstractScannedResultCollector implements ScannedResultCol
       // data chunk to the collector
       if (isMeasureExistsInCurrentBlock[i]) {
         msrValues[i + offset] = getMeasureData(scannedResult.getMeasureChunk(measuresOrdinal[i]),
-            scannedResult.getCurrenrRowId(), measureDatatypes[i]);
+            scannedResult.getCurrentRowId(), measureDatatypes[i]);
       } else {
         // if not then get the default value and use that value in aggregation
         msrValues[i + offset] = measureDefaultValue[i];
@@ -153,5 +154,18 @@ public abstract class AbstractScannedResultCollector implements ScannedResultCol
   @Override public void collectVectorBatch(AbstractScannedResult scannedResult,
       CarbonColumnarBatch columnarBatch) {
     throw new UnsupportedOperationException("Works only for batch collectors");
+  }
+  
+  /**
+   * This method will add a record both key and value to list object
+   * it will keep track of how many record is processed, to handle limit scenario
+   */
+  //TODO
+  
+  @Override
+  public List<Object[]> collectSortData(AbstractScannedSortResult scannedResult, int batchSize,
+      String stopKey) {
+    // TODO Auto-generated method stub
+    return null;
   }
 }

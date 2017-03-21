@@ -128,4 +128,9 @@ public interface DataRefNode {
    * @return
    */
   int numberOfPages();
+  String getNodeId();
+  DimensionRawColumnChunk[] getDimensionChunksForSort(FileHolder fileReader, int[] sortDimensionBlockIndexes, int limit, boolean descSortFlg);
+  DimensionRawColumnChunk getDimensionChunk(FileHolder fileReader, int blockIndexes, int limit);
+  
+  DimensionRawColumnChunk getDimensionChunk(FileHolder fileReader, int blockIndexes, int limit, int maxLogicalRowId, boolean descSortFlg);
 }

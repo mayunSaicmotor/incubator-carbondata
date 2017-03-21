@@ -659,4 +659,15 @@ public class BlockExecutionInfo {
   public void setLimit(int limit) {
     this.limit = limit;
   }
+  
+  private boolean sortFlg = false;
+
+  public boolean isSortFlg() {
+    return sortFlg;
+  }
+
+  public void setSortFlg(boolean sortFlg) {
+    this.sortFlg = sortFlg;
+  }
+  
 }

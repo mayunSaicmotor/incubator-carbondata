@@ -249,6 +249,31 @@ public class QueryUtil {
   }
 
   /**
+   * Below method will be used to get the dimension block index in file based
+   * on query dimension
+   *
+   * @param queryDimensions                query dimension
+   * @param dimensionOrdinalToBlockMapping mapping of dimension block in file to query dimension
+   * @return block index of file
+   */
+  public static int[] getDimensionsBlockIndexes(List<QueryDimension> queryDimensions,
+      Map<Integer, Integer> dimensionOrdinalToBlockMapping) {
+    // using set as in row group columns will point to same block
+    Set<Integer> dimensionBlockIndex = new HashSet<Integer>();
+    int blockIndex = 0;
+    for (int i = 0; i < queryDimensions.size(); i++) {
+      blockIndex =
+          dimensionOrdinalToBlockMapping.get(queryDimensions.get(i).getDimension().getOrdinal());
+      dimensionBlockIndex.add(blockIndex);
+      if (queryDimensions.get(i).getDimension().numberOfChild() > 0) {
+        addChildrenBlockIndex(dimensionBlockIndex, queryDimensions.get(i).getDimension());
+      }
+    }
+    return ArrayUtils
+        .toPrimitive(dimensionBlockIndex.toArray(new Integer[dimensionBlockIndex.size()]));
+  }
+  
+  /**
    * Below method will be used to add the children block index
    * this will be basically for complex dimension which will have children
    *
@@ -862,6 +887,9 @@ public class QueryUtil {
 
   private static Set<Integer> getFilterDimensionOrdinal(Set<CarbonDimension> filterDimensions) {
     Set<Integer> filterDimensionsOrdinal = new HashSet<>();
+    if(filterDimensions == null){
+       return filterDimensionsOrdinal;
+    }
     for (CarbonDimension filterDimension : filterDimensions) {
       filterDimensionsOrdinal.add(filterDimension.getOrdinal());
       getChildDimensionOrdinal(filterDimension, filterDimensionsOrdinal);

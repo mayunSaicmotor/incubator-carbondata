@@ -35,9 +35,26 @@ object SaicFilterBigRangeQuery {
   
     var start = System.currentTimeMillis()
 
+           cc.sql("""
+          select 
+           vin,
+            gnsstime,
+            vehsyspwrmod,
+            vehdoorfrontpas,
+            vehdoorfrontdrv,
+            vehdoorrearleft,
+            vehdoorrearright,
+            vehbonnet,
+            vehboot
+          from rx5_tbox_parquet_all 
+          
+
+          limit 200000
+           """).show(500000)
            
            
-        cc.sql("""
+           
+/*        cc.sql("""
           select 
            vin,
             gnsstime,
@@ -52,7 +69,7 @@ object SaicFilterBigRangeQuery {
            where  vin between  'LSJA24U60GG130493' and  'LSJA24U63GS048898'
           order by vin 
           limit 2000
-           """).show(500000)
+           """).show(500000)*/
            
         
                   var end = System.currentTimeMillis()

@@ -148,4 +148,29 @@ public class VariableLengthDimensionDataChunk extends AbstractDimensionDataChunk
     }
     return column + 1;
   }
+
+//  @Override
+//  public int[] getInvertedIndex() {
+//    // TODO Auto-generated method stub
+//    return null;
+//  }
+
+
+  @Override
+  public int[] getCompleteRleDataChunk() {
+    // TODO Auto-generated method stub
+    return null;
+  }
+
+  @Override
+  public void setCompleteRleDataChunk(int[] rleDataChunk) {
+    // TODO Auto-generated method stub
+    
+  }
+
+  @Override
+  public int getTotalRowNumber() {
+    // TODO Auto-generated method stub
+    return 0;
+  }
 }

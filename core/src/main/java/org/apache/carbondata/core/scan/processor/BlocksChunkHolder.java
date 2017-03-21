@@ -16,10 +16,18 @@
  */
 package org.apache.carbondata.core.scan.processor;
 
+import java.io.IOException;
+
 import org.apache.carbondata.core.datastore.DataRefNode;
 import org.apache.carbondata.core.datastore.FileHolder;
 import org.apache.carbondata.core.datastore.chunk.impl.DimensionRawColumnChunk;
 import org.apache.carbondata.core.datastore.chunk.impl.MeasureRawColumnChunk;
+import org.apache.carbondata.core.scan.executor.infos.BlockExecutionInfo;
+import org.apache.carbondata.core.scan.expression.exception.FilterUnsupportedException;
+import org.apache.carbondata.core.scan.model.SortOrderType;
+import org.apache.carbondata.core.scan.result.AbstractScannedResult;
+import org.apache.carbondata.core.scan.result.AbstractScannedSortResult;
+import org.apache.carbondata.core.scan.scanner.BlockletScanner;
 
 /**
  * Block chunk holder which will hold the dimension and
@@ -127,4 +135,112 @@ public class BlocksChunkHolder {
       this.dimensionRawDataChunk[i] = null;
     }
   }
+  
+  //TODO
+  private BlockletScanner blockletScanner;
+  private int[] allSortDimensionBlocksIndexes;
+  private int limit = 0;
+  private int nodeSize;
+  private byte[] maxValueForSortKey;
+  private byte[] minValueForSortKey;
+
+  private String blockletNodeId;
+  private BlockExecutionInfo blockExecutionInfo;
+
+
+public String getBlockletNodeId() {
+    return blockletNodeId;
+  }
+
+  public void setBlockletNodeId(String blockletNodeId) {
+    this.blockletNodeId = blockletNodeId;
+  }
+
+public BlockExecutionInfo getBlockExecutionInfo() {
+    return blockExecutionInfo;
+}
+
+public void setBlockExecutionInfo(BlockExecutionInfo blockExecutionInfo) {
+    this.blockExecutionInfo = blockExecutionInfo;
+}
+
+public int getNodeSize() {
+    return nodeSize;
+}
+
+public void setNodeSize(int nodeSize) {
+    this.nodeSize = nodeSize;
+}
+
+public byte[] getMaxValueForSortKey() {
+    return maxValueForSortKey;
+}
+
+public void setMaxValueForSortKey(byte[] maxValueForSortKey) {
+    this.maxValueForSortKey = maxValueForSortKey;
+}
+
+public byte[] getMinValueForSortKey() {
+    return minValueForSortKey;
+}
+
+public void setMinValueForSortKey(byte[] minValueForSortKey) {
+    this.minValueForSortKey = minValueForSortKey;
+}
+
+
+
+public int[] getAllSortDimensionBlocksIndexes() {
+  return allSortDimensionBlocksIndexes;
+}
+
+public void setAllSortDimensionBlocksIndexes(int[] allSortDimensionBlocksIndexes) {
+  this.allSortDimensionBlocksIndexes = allSortDimensionBlocksIndexes;
+}
+
+public int getLimit() {
+    return limit;
+}
+
+public void setLimit(int limit) {
+    this.limit = limit;
+}
+
+public BlockletScanner getBlockletScanner() {
+    return blockletScanner;
+}
+
+public void setBlockletScanner(BlockletScanner blockletScanner) {
+    this.blockletScanner = blockletScanner;
+}
+
+AbstractScannedResult scanBlocklet()
+          throws IOException, FilterUnsupportedException{
+    
+    return this.blockletScanner.scanBlocklet(this);
+}
+
+//TODO
+public AbstractScannedSortResult[] scanBlockletForSort(SortOrderType orderType)
+          throws IOException, FilterUnsupportedException{
+    
+    AbstractScannedSortResult[] results = this.blockletScanner.scanBlockletForSort(this, orderType);
+//    for(AbstractScannedSortResult result : results){
+//      result.setScannerResultAggregator(new DictionaryBasedSortResultCollector(blockExecutionInfo));
+//    }  
+    return results;
+}
+
+private boolean loadDataDelay = false;
+
+public boolean isLoadDataDelay() {
+  return loadDataDelay;
+}
+
+public void setLoadDataDelay(boolean loadDataDelay) {
+  this.loadDataDelay = loadDataDelay;
+}
+
+
+
 }

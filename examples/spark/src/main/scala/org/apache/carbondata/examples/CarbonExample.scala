@@ -22,43 +22,39 @@ import org.apache.carbondata.core.util.CarbonProperties
 import org.apache.carbondata.examples.util.ExampleUtils
 
 object CarbonExample {
-
   def main(args: Array[String]) {
     val cc = ExampleUtils.createCarbonContext("CarbonExample")
     val testData = ExampleUtils.currentPath + "/src/main/resources/data.csv"
 
-    // Specify date format based on raw data
+    // Specify timestamp format based on raw data
     CarbonProperties.getInstance()
-      .addProperty(CarbonCommonConstants.CARBON_DATE_FORMAT, "yyyy/MM/dd")
+      .addProperty(CarbonCommonConstants.CARBON_TIMESTAMP_FORMAT, "yyyy/MM/dd")
 
     cc.sql("DROP TABLE IF EXISTS t3")
 
-    // Create table, 6 dimensions, 1 measure
     cc.sql("""
            CREATE TABLE IF NOT EXISTS t3
-           (ID Int, date Date, country String,
-           name String, phonetype String, serialname char(10), salary Int)
+           (ID Int, date Timestamp, country String,
+           name String, phonetype String, serialname String, salary Int,
+           name1 String, name2 String, name3 String, name4 String, name5 String, name6 String,name7 String,name8 String
+           
+           )
            STORED BY 'carbondata'
            """)
 
-    // Currently there are two data loading flows in CarbonData, one uses Kettle as ETL tool
-    // in each node to do data loading, another uses a multi-thread framework without Kettle (See
-    // AbstractDataLoadProcessorStep)
-    // Load data
     cc.sql(s"""
            LOAD DATA LOCAL INPATH '$testData' into table t3
            """)
 
-    // Perform a query
+
+           
     cc.sql("""
            SELECT country, count(salary) AS amount
            FROM t3
            WHERE country IN ('china','france')
            GROUP BY country
            """).show()
-
-    // Drop table
-    cc.sql("DROP TABLE IF EXISTS t3")
+  cc.sql("desc t3").show();
+    //cc.sql("DROP TABLE IF EXISTS t3")
   }
-
 }

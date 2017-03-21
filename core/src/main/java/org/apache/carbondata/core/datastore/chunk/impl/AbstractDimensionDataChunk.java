@@ -52,6 +52,25 @@ public abstract class AbstractDimensionDataChunk implements DimensionColumnDataC
   @Override public int getInvertedIndex(int index) {
     return dataChunkStore.getInvertedIndex(index);
   }
+  
+/*  *//**
+   * @return inverted index
+   *//*
+  @Override public int[] getInvertedIndex() {
+    return dataChunkStore.getInvertedIndex();
+  }
+  
+  *//**
+   * @return inverted index
+   *//*
+  @Override public int[] getInvertedIndexReverse() {
+    return dataChunkStore.getInvertedIndexReverse();
+  }*/
+  
+  @Override
+  public int getInvertedIndexReverse(int index) {
+    return dataChunkStore.getInvertedIndexReverse(index);
+  }
 
   /**
    * @return length of each column
@@ -84,5 +103,20 @@ public abstract class AbstractDimensionDataChunk implements DimensionColumnDataC
    */
   @Override public boolean isNoDicitionaryColumn() {
     return false;
+  }
+  
+  public static int[] getInvertedReverseIndex(int[] invertedIndex) {
+    int[] columnIndexTemp = new int[invertedIndex.length];
+
+    for (int i = 0; i < invertedIndex.length; i++) {
+      columnIndexTemp[invertedIndex[i]] = i;
+    }
+    return columnIndexTemp;
+  }
+  
+  @Override
+  public byte[] getChunkDataByPhysicalRowId(int physicalRowId) {
+
+    return dataChunkStore.getRow(physicalRowId);
   }
 }

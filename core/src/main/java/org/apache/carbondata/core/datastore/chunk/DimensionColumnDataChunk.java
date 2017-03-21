@@ -76,6 +76,8 @@ public interface DimensionColumnDataChunk {
    * @return inverted index
    */
   int getInvertedIndex(int index);
+  
+  int getInvertedIndexReverse(int index);
 
   /**
    * @return whether column is dictionary column or not
@@ -105,5 +107,16 @@ public interface DimensionColumnDataChunk {
    * below method will be used to free the allocated memory
    */
   void freeMemory();
+
+  /**
+   * @return inverted index array
+   */
+  //int[] getInvertedIndex();
+  //int[] getInvertedIndexReverse();
+  
+  byte[] getChunkDataByPhysicalRowId(int physicalRowId);
+  int[] getCompleteRleDataChunk();
+  void setCompleteRleDataChunk(int[] rleDataChunk);
+  int getTotalRowNumber();
 
 }

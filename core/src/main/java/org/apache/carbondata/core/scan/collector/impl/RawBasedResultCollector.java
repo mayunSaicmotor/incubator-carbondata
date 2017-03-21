@@ -58,7 +58,7 @@ public class RawBasedResultCollector extends AbstractScannedResultCollector {
       wrapper.setImplicitColumnByteArray(scannedResult.getBlockletId()
           .getBytes(Charset.forName(CarbonCommonConstants.DEFAULT_CHARSET)));
       if (null != deleteDeltaDataCache && deleteDeltaDataCache
-          .contains(scannedResult.getCurrenrRowId())) {
+          .contains(scannedResult.getCurrentRowId())) {
         continue;
       }
       row[0] = wrapper;

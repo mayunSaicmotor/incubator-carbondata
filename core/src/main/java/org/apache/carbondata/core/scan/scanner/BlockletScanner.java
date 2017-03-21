@@ -19,8 +19,10 @@ package org.apache.carbondata.core.scan.scanner;
 import java.io.IOException;
 
 import org.apache.carbondata.core.scan.expression.exception.FilterUnsupportedException;
+import org.apache.carbondata.core.scan.model.SortOrderType;
 import org.apache.carbondata.core.scan.processor.BlocksChunkHolder;
 import org.apache.carbondata.core.scan.result.AbstractScannedResult;
+import org.apache.carbondata.core.scan.result.AbstractScannedSortResult;
 
 /**
  * Interface for processing the block
@@ -45,16 +47,25 @@ public interface BlockletScanner {
    */
   AbstractScannedResult scanBlocklet(BlocksChunkHolder blocksChunkHolder)
       throws IOException, FilterUnsupportedException;
+  
+  AbstractScannedSortResult[] scanBlockletForSort(BlocksChunkHolder blocksChunkHolder, SortOrderType orderType)
+      throws IOException, FilterUnsupportedException;
 
   /**
    * Just reads the blocklet from file, does not uncompress it.
    * @param blocksChunkHolder
    */
   void readBlocklet(BlocksChunkHolder blocksChunkHolder) throws IOException;
+  
+  void readBlockletForSort(BlocksChunkHolder blocksChunkHolder) throws IOException;
+  
+  void readBlockletForLazyLoad(AbstractScannedSortResult scannedSortResul) throws IOException;
 
   /**
    * In case if there is no filter satisfies.
    * @return AbstractScannedResult
    */
   AbstractScannedResult createEmptyResult();
+  
+  AbstractScannedResult getScannedResultAfterProcessFilter();
 }

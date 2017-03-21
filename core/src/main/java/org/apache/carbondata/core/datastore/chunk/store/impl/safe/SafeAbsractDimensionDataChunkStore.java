@@ -17,6 +17,7 @@
 
 package org.apache.carbondata.core.datastore.chunk.store.impl.safe;
 
+import org.apache.carbondata.core.datastore.chunk.impl.AbstractDimensionDataChunk;
 import org.apache.carbondata.core.datastore.chunk.store.DimensionDataChunkStore;
 
 /**
@@ -84,6 +85,31 @@ public abstract class SafeAbsractDimensionDataChunkStore implements DimensionDat
    */
   @Override public int getInvertedIndex(int rowId) {
     return invertedIndex[rowId];
+  }
+  
+/*  @Override public int[] getInvertedIndex() {
+    return invertedIndex;
+  }
+  
+  @Override public int[] getInvertedIndexReverse() {
+    if(invertedIndexReverse == null){
+      invertedIndexReverse = AbstractDimensionDataChunk.getInvertedReverseIndex(invertedIndex);
+    }
+    return invertedIndexReverse;
+  }*/
+  
+  
+  /**
+   * Below method will be used to get the inverted index
+   *
+   * @param rowId row id
+   * @return inverted index based on row id passed
+   */
+  @Override public int getInvertedIndexReverse(int rowId) {
+    if(invertedIndexReverse == null){
+      invertedIndexReverse = AbstractDimensionDataChunk.getInvertedReverseIndex(invertedIndex);
+    }
+    return invertedIndexReverse[rowId];
   }
 
   /**

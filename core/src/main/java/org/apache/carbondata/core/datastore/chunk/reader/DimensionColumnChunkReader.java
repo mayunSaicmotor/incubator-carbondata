@@ -38,6 +38,9 @@ public interface DimensionColumnChunkReader {
    */
   DimensionRawColumnChunk[] readRawDimensionChunks(FileHolder fileReader, int[][] blockletIndexes)
       throws IOException;
+  
+  void readRawDimensionChunksForLeft(FileHolder fileReader, int[][] blockletIndexes,
+      DimensionRawColumnChunk[] dataChunks) throws IOException;
 
   /**
    * Below method will be used to read the chunk based on block index
