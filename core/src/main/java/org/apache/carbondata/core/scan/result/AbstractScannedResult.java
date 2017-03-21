@@ -307,6 +307,7 @@ public abstract class AbstractScannedResult {
 
   /**
    * Get total rows in the current page
+   *
    * @return
    */
   public int getCurrentPageRowCount() {
@@ -398,7 +399,6 @@ public abstract class AbstractScannedResult {
     this.rowId = rowId;
   }
 
-
   /**
    * Below method will be used to get the complex type keys array based
    * on row id for all the complex type dimension selected in query
@@ -453,6 +453,44 @@ public abstract class AbstractScannedResult {
   }
 
   /**
+   * Below method will be used to free the occupied memory
+   */
+  public void freeMemory() {
+    // first free the dimension chunks
+    if (null != dataChunks) {
+      for (int i = 0; i < dataChunks.length; i++) {
+        if (null != dataChunks[i]) {
+          for (int j = 0; j < dataChunks[i].length; j++) {
+            if (null != dataChunks[i][j]) {
+              dataChunks[i][j].freeMemory();
+            }
+          }
+        }
+      }
+    }
+    // free the measure data chunks
+    if (null != measureDataChunks) {
+      for (int i = 0; i < measureDataChunks.length; i++) {
+        if (null != measureDataChunks[i]) {
+          for (int j = 0; j < measureDataChunks[i].length; j++) {
+            if (null != measureDataChunks[i][j]) {
+              measureDataChunks[i][j].freeMemory();
+            }
+          }
+        }
+      }
+    }
+    // free the raw chunks
+    if (null != rawColumnChunks) {
+      for (int i = 0; i < rawColumnChunks.length; i++) {
+        if (null != rawColumnChunks[i]) {
+          rawColumnChunks[i].freeMemory();
+        }
+      }
+    }
+  }
+
+  /**
    * As this class will be a flyweight object so
    * for one block all the blocklet scanning will use same result object
    * in that case we need to reset the counter to zero so
@@ -470,7 +508,7 @@ public abstract class AbstractScannedResult {
   public void setNumberOfRows(int[] numberOfRows) {
     this.numberOfRows = numberOfRows;
 
-    for (int count: numberOfRows) {
+    for (int count : numberOfRows) {
       totalNumberOfRows += count;
     }
   }
@@ -581,7 +619,6 @@ public abstract class AbstractScannedResult {
   public abstract String[] getNoDictionaryKeyStringArray();
 
   /**
-   *
    * @return BlockletLevelDeleteDeltaDataCache.
    */
   public BlockletLevelDeleteDeltaDataCache getDeleteDeltaDataCache() {

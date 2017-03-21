@@ -80,7 +80,12 @@ public class BlockletBTreeLeafNode extends AbstractBTreeLeafNode {
             builderInfos.getFooterList().get(0).getBlockletList().get(leafIndex),
             builderInfos.getFooterList().get(0).getBlockInfo().getTableBlockInfo().getFilePath());
     this.nodeNumber = nodeNumber;
+<<<<<<< master
+    this.numberOfPages =
+        builderInfos.getFooterList().get(0).getBlockletList().get(leafIndex).getNumberOfPages();
+=======
     this.nodeId = nodeIdPrefix + nodeNumber;
+>>>>>>> CARBONDATA-754
   }
 
   /**
@@ -102,8 +107,8 @@ public class BlockletBTreeLeafNode extends AbstractBTreeLeafNode {
    * @param blockIndex block index to be read
    * @return dimension data chunk
    */
-  @Override public DimensionRawColumnChunk getDimensionChunk(FileHolder fileReader,
-      int blockIndex) throws IOException {
+  @Override public DimensionRawColumnChunk getDimensionChunk(FileHolder fileReader, int blockIndex)
+      throws IOException {
     return dimensionChunksReader.readRawDimensionChunk(fileReader, blockIndex);
   }
 
@@ -134,8 +139,7 @@ public class BlockletBTreeLeafNode extends AbstractBTreeLeafNode {
   /**
    * @return the number of pages in blocklet
    */
-  @Override
-  public int numberOfPages() {
+  @Override public int numberOfPages() {
     return numberOfPages;
   }
   
