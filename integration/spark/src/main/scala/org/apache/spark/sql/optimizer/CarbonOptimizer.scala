@@ -223,6 +223,7 @@ class ResolveCarbonFunctions(relations: Seq[CarbonDecoderRelation])
     def addTempDecoder(currentPlan: LogicalPlan): LogicalPlan = {
       currentPlan match {
         case limit@Limit(_, child: Sort) =>
+          limitExpr = limit.limitExpr
           if (!decoder) {
             decoder = true
             CarbonDictionaryTempDecoder(new util.HashSet[AttributeReferenceWrapper](),
@@ -319,11 +320,11 @@ class ResolveCarbonFunctions(relations: Seq[CarbonDecoderRelation])
             sortNode
           }
 
-        // case limit: Limit if !decoder && limit.child.isInstanceOf[Sort] =>
+/*        // case limit: Limit if !decoder && limit.child.isInstanceOf[Sort] =>
         case limit: Limit =>
           //var sort = limit.child.asInstanceOf[Sort]
           limitExpr = limit.limitExpr
-          limit
+          limit*/
 
         case union: Union
           if !(union.left.isInstanceOf[CarbonDictionaryTempDecoder] ||

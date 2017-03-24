@@ -28,6 +28,7 @@ import org.apache.carbondata.core.scan.model.SortOrderType;
 import org.apache.carbondata.core.scan.result.AbstractScannedResult;
 import org.apache.carbondata.core.scan.result.AbstractScannedSortResult;
 import org.apache.carbondata.core.scan.scanner.BlockletScanner;
+import org.apache.carbondata.core.util.ByteUtil;
 
 /**
  * Block chunk holder which will hold the dimension and
@@ -141,6 +142,8 @@ public class BlocksChunkHolder {
   private int[] allSortDimensionBlocksIndexes;
   private int limit = 0;
   private int nodeSize;
+  //private int filteredSize;
+  private  AbstractScannedSortResult scannedResult;
   private byte[] maxValueForSortKey;
   private byte[] minValueForSortKey;
 
@@ -148,6 +151,30 @@ public class BlocksChunkHolder {
   private BlockExecutionInfo blockExecutionInfo;
 
 
+public AbstractScannedSortResult getScannedResult() {
+    return scannedResult;
+  }
+
+  public void setScannedResult(AbstractScannedSortResult scannedResult) {
+    this.scannedResult = scannedResult;
+  }
+
+public int getFilteredSize() {
+    return scannedResult.numberOfOutputRows();
+  }
+
+/*  public void setFilteredSize(int filteredSize) {
+    this.filteredSize = filteredSize;
+  }
+  *//**
+   * @param numberOfRows set total of number rows valid after scanning
+   *//*
+  public void setFilteredSize(int[] filteredRows) {
+    for (int count : filteredRows) {
+      filteredSize += count;
+    }
+  }*/
+  
 public String getBlockletNodeId() {
     return blockletNodeId;
   }
@@ -180,6 +207,24 @@ public void setMaxValueForSortKey(byte[] maxValueForSortKey) {
     this.maxValueForSortKey = maxValueForSortKey;
 }
 
+  public void setMaxValueForSortKeyForFilterQuery(byte[] maxValueForSortKey) {
+    if (ByteUtil.UnsafeComparer.INSTANCE.compareTo(maxValueForSortKey, this.maxValueForSortKey,
+        true) > 0) {
+      this.maxValueForSortKey = maxValueForSortKey;
+    }
+  }
+
+  public void setMinValueForSortKeyForFilterQuery(byte[] minValueForSortKey) {
+    if (ByteUtil.UnsafeComparer.INSTANCE.compareTo(minValueForSortKey, this.minValueForSortKey,
+        true) > 0) {
+      this.minValueForSortKey = minValueForSortKey;
+    }
+  }
+
+  public void setNodeSizeForFilterQuery(int filteredNodeSize) {
+    this.nodeSize = filteredNodeSize;
+  }
+  
 public byte[] getMinValueForSortKey() {
     return minValueForSortKey;
 }
@@ -219,6 +264,11 @@ AbstractScannedResult scanBlocklet()
     
     return this.blockletScanner.scanBlocklet(this);
 }
+
+public void readBlockletForSort() throws IOException{
+  blockletScanner.readBlockletForSort(this);
+}
+
 
 //TODO
 public AbstractScannedSortResult[] scanBlockletForSort(SortOrderType orderType)

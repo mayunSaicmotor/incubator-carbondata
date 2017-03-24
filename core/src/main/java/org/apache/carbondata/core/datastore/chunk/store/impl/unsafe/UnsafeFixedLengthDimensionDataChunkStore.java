@@ -45,11 +45,11 @@ public class UnsafeFixedLengthDimensionDataChunkStore
     this.columnValueSize = columnValueSize;
   }
 
-  /**
+/*  *//**
    * Below method will be used to get the row based inverted index
    *
    * @param rowId Inverted index
-   */
+   *//*
   @Override public byte[] getRow(int rowId) {
     // if column was explicitly sorted we need to get the rowid based inverted index reverse
     if (isExplicitSorted) {
@@ -57,6 +57,12 @@ public class UnsafeFixedLengthDimensionDataChunkStore
           dataPageMemoryBlock.getBaseOffset() + this.invertedIndexReverseOffset + (rowId
               * CarbonCommonConstants.INT_SIZE_IN_BYTE));
     }
+
+    return getPhysicalRow(rowId);
+  }
+  */
+  @Override public byte[] getPhysicalRow(int rowId) {
+
     // creating a row
     byte[] data = new byte[columnValueSize];
     //copy the row from memory block based on offset

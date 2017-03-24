@@ -80,12 +80,11 @@ public class BlockletBTreeLeafNode extends AbstractBTreeLeafNode {
             builderInfos.getFooterList().get(0).getBlockletList().get(leafIndex),
             builderInfos.getFooterList().get(0).getBlockInfo().getTableBlockInfo().getFilePath());
     this.nodeNumber = nodeNumber;
-<<<<<<< master
+
     this.numberOfPages =
         builderInfos.getFooterList().get(0).getBlockletList().get(leafIndex).getNumberOfPages();
-=======
     this.nodeId = nodeIdPrefix + nodeNumber;
->>>>>>> CARBONDATA-754
+
   }
 
   /**

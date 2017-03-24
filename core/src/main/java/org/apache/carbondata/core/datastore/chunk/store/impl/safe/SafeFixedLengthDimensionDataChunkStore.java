@@ -35,16 +35,20 @@ public class SafeFixedLengthDimensionDataChunkStore extends SafeAbsractDimension
     this.columnValueSize = columnValueSize;
   }
 
-  /**
+/*  *//**
    * Below method will be used to get the row based inverted index
    *
    * @param rowId Inverted index
-   */
+   *//*
   @Override public byte[] getRow(int rowId) {
     // if column was explicitly sorted we need to get the rowid based inverted index reverse
     if (isExplictSorted) {
       rowId = invertedIndexReverse[rowId];
     }
+    return getPhysicalRow(rowId);
+  }*/
+  
+  @Override public byte[] getPhysicalRow(int rowId) {
     // creating a row
     byte[] row = new byte[columnValueSize];
     //copy the row from data chunk based on offset
@@ -52,6 +56,7 @@ public class SafeFixedLengthDimensionDataChunkStore extends SafeAbsractDimension
     System.arraycopy(this.data, rowId * columnValueSize, row, 0, columnValueSize);
     return row;
   }
+  
 
   /**
    * Below method will be used to get the surrogate key of the based on the row
@@ -65,6 +70,11 @@ public class SafeFixedLengthDimensionDataChunkStore extends SafeAbsractDimension
     if (isExplictSorted) {
       index = invertedIndexReverse[index];
     }
+
+    return getSurrogateByPhysicalId(index);
+  }
+  
+  @Override public int getSurrogateByPhysicalId(int index) {
     // below part is to convert the byte array to surrogate value
     int startOffsetOfData = index * columnValueSize;
     return CarbonUtil.getSurrogateInternal(data, startOffsetOfData, columnValueSize);

@@ -46,7 +46,7 @@ public abstract class AbstractBlockletScanner implements BlockletScanner {
    */
   protected BlockExecutionInfo blockExecutionInfo;
 
-  public QueryStatisticsModel queryStatisticsModel;
+  protected QueryStatisticsModel queryStatisticsModel;
 
   private AbstractScannedResult emptyResult;
 
@@ -191,6 +191,14 @@ public abstract class AbstractBlockletScanner implements BlockletScanner {
   
   @Override public void readBlockletForLazyLoad(AbstractScannedSortResult scannedResult) throws IOException {
     // TODO Auto-generated method stub
+    
+  }
+  
+  @Override
+  public boolean applyFilter(BlocksChunkHolder blocksChunkHolder)
+      throws FilterUnsupportedException, IOException {
+    
+     throw new FilterUnsupportedException("unsupported method");
     
   }
 }

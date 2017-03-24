@@ -209,13 +209,14 @@ public class QueryUtil {
   public static int[] getDimensionsBlockIndexes(List<QueryDimension> queryDimensions,
       Map<Integer, Integer> dimensionOrdinalToBlockMapping,
       List<CarbonDimension> customAggregationDimension, Set<CarbonDimension> filterDimensions,
-      Set<Integer> allProjectionListDimensionIndexes) {
+      Set<Integer> allProjectionListDimensionIndexes, int[] sortIndexes, boolean sortFlg) {
     // using set as in row group columns will point to same block
     Set<Integer> dimensionBlockIndex = new HashSet<Integer>();
     Set<Integer> filterDimensionOrdinal = getFilterDimensionOrdinal(filterDimensions);
     int blockIndex = 0;
     for (int i = 0; i < queryDimensions.size(); i++) {
-      if (queryDimensions.get(i).getDimension().hasEncoding(Encoding.IMPLICIT)) {
+      if (queryDimensions.get(i).getDimension().hasEncoding(Encoding.IMPLICIT)
+          || (sortFlg && queryDimensions.get(i).getDimension().getOrdinal() == sortIndexes[0])) {
         continue;
       }
 

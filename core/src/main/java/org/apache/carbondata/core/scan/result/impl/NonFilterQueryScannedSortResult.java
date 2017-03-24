@@ -74,7 +74,7 @@ public class NonFilterQueryScannedSortResult extends AbstractScannedSortResult {
    * @return no dictionary key array for all the no dictionary dimension
    */
   @Override public String[] getNoDictionaryKeyStringArray() {
-    return getNoDictionaryKeyStringArray(currentRow);
+    return getNoDictionaryKeyStringArray(this.currentLogicRowId);
   }
 
   /**

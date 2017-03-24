@@ -245,14 +245,8 @@ public abstract class AbstractQueryExecutor<E> implements QueryExecutor<E> {
     blockExecutionInfo.setBlockKeyGenerator(blockKeyGenerator);
     // setting whether raw record query or not
     blockExecutionInfo.setRawRecordDetailQuery(queryModel.isForcedDetailRawQuery());
-<<<<<<< master
-=======
     // setting the limit
     blockExecutionInfo.setLimit(queryModel.getLimit());
-    // setting the masked byte of the block which will be
-    // used to update the unpack the older block keys
-    blockExecutionInfo.setMaskedByteForBlock(maksedByte);
->>>>>>> CARBONDATA-754
     // total number dimension
     blockExecutionInfo
         .setTotalNumberDimensionBlock(segmentProperties.getDimensionOrdinalToBlockMapping().size());
@@ -301,33 +295,36 @@ public abstract class AbstractQueryExecutor<E> implements QueryExecutor<E> {
     // create a list of filter dimensions present in the current block
     Set<CarbonDimension> currentBlockFilterDimensions =
         getCurrentBlockFilterDimensions(queryProperties.complexFilterDimension, segmentProperties);
-    int[] dimensionsBlockIndexes = QueryUtil.getDimensionsBlockIndexes(currentBlockQueryDimensions,
-        segmentProperties.getDimensionOrdinalToBlockMapping(), expressionDimensions,
-        currentBlockFilterDimensions, allProjectionListDimensionIdexes);
-    int numberOfColumnToBeReadInOneIO = Integer.parseInt(CarbonProperties.getInstance()
-        .getProperty(CarbonV3DataFormatConstants.NUMBER_OF_COLUMN_TO_READ_IN_IO,
-            CarbonV3DataFormatConstants.NUMBER_OF_COLUMN_TO_READ_IN_IO_DEFAULTVALUE));
 
     // TODO setting all sorted dimension
+    int[] sortIndexes = null;
     if (queryModel.getSortDimensions() != null && queryModel.getSortDimensions().size() == 1) {
-      int[] sortIndexes = QueryUtil.getDimensionsBlockIndexes(queryModel.getSortDimensions(),
+      sortIndexes = QueryUtil.getDimensionsBlockIndexes(queryModel.getSortDimensions(),
           segmentProperties.getDimensionOrdinalToBlockMapping());
       if (sortIndexes.length == 1) {
         blockExecutionInfo.setSortFlg(true);
         blockExecutionInfo.setAllSortDimensionBlocksIndexes(sortIndexes);
       }
-
     }
+
+    int[] dimensionsBlockIndexes = QueryUtil.getDimensionsBlockIndexes(currentBlockQueryDimensions,
+        segmentProperties.getDimensionOrdinalToBlockMapping(), expressionDimensions,
+        currentBlockFilterDimensions, allProjectionListDimensionIdexes, sortIndexes, blockExecutionInfo.isSortFlg());
+    int numberOfColumnToBeReadInOneIO = Integer.parseInt(CarbonProperties.getInstance()
+        .getProperty(CarbonV3DataFormatConstants.NUMBER_OF_COLUMN_TO_READ_IN_IO,
+            CarbonV3DataFormatConstants.NUMBER_OF_COLUMN_TO_READ_IN_IO_DEFAULTVALUE));
+
+
 
     if (dimensionsBlockIndexes.length > 0) {
       numberOfElementToConsider = dimensionsBlockIndexes[dimensionsBlockIndexes.length
           - 1] == segmentProperties.getBlockTodimensionOrdinalMapping().size() - 1
               ? dimensionsBlockIndexes.length - 1 : dimensionsBlockIndexes.length;
-      // currently only consider order by 1 dimension
+/*      // currently only consider order by 1 dimension
       int[] allSelectedDimensionBlocksIndexesExceptSortDim;
       if (blockExecutionInfo.isSortFlg()) {
         numberOfElementToConsider--;
-        allSelectedDimensionBlocksIndexesExceptSortDim = new int[dimensionsBlockIndexes.length - 1];
+        allSelectedDimensionBlocksIndexesExceptSortDim = new int[dimensionsBlockIndexes.length];
         int sortIndex = blockExecutionInfo.getAllSortDimensionBlocksIndexes()[0];
         int j = 0;
         for (int i = 0; i < dimensionsBlockIndexes.length; i++) {
@@ -336,28 +333,24 @@ public abstract class AbstractQueryExecutor<E> implements QueryExecutor<E> {
             j++;
           }
         }
-
       } else {
         allSelectedDimensionBlocksIndexesExceptSortDim = dimensionsBlockIndexes;
-      }
+      }*/
       blockExecutionInfo.setAllSelectedDimensionBlocksIndexes(
-          CarbonUtil.getRangeIndex(allSelectedDimensionBlocksIndexesExceptSortDim,
+          CarbonUtil.getRangeIndex(dimensionsBlockIndexes,
               numberOfElementToConsider, numberOfColumnToBeReadInOneIO));
     } else {
       blockExecutionInfo.setAllSelectedDimensionBlocksIndexes(new int[0][0]);
     }
-<<<<<<< master
     // get the list of updated filter measures present in the current block
     Set<CarbonMeasure> currentBlockFilterMeasures =
         getCurrentBlockFilterMeasures(queryProperties.filterMeasures, segmentProperties);
-=======
 
 //    // TODO setting all sorted dimension
 //    blockExecutionInfo.setAllSortDimensionBlocksIndexes(QueryUtil
 //        .getDimensionsBlockIndexes(queryModel.getSortDimensions(),
 //            segmentProperties.getDimensionOrdinalToBlockMapping()));
 
->>>>>>> CARBONDATA-754
     // list of measures to be projected
     List<Integer> allProjectionListMeasureIndexes = new ArrayList<>();
     int[] measureBlockIndexes = QueryUtil

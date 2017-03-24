@@ -113,6 +113,19 @@ public abstract class SafeAbsractDimensionDataChunkStore implements DimensionDat
   }
 
   /**
+   * Below method will be used to get the row based inverted index
+   *
+   * @param rowId Inverted index
+   */
+  @Override public byte[] getRow(int rowId) {
+    // if column was explicitly sorted we need to get the rowid based inverted index reverse
+    if (isExplictSorted) {
+      rowId = invertedIndexReverse[rowId];
+    }
+    return getPhysicalRow(rowId);
+  }
+  
+  /**
    * Below method will be used to get the surrogate key of the based on the row
    * id passed
    *
@@ -120,6 +133,9 @@ public abstract class SafeAbsractDimensionDataChunkStore implements DimensionDat
    * @return surrogate key
    */
   @Override public int getSurrogate(int rowId) {
+    throw new UnsupportedOperationException("Operation not supported");
+  }
+  @Override public int getSurrogateByPhysicalId(int rowId) {
     throw new UnsupportedOperationException("Operation not supported");
   }
 

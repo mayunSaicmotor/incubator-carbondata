@@ -18,6 +18,7 @@ package org.apache.carbondata.core.scan.collector.impl;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.List;
 
 import org.apache.carbondata.common.logging.LogService;
 import org.apache.carbondata.common.logging.LogServiceFactory;
@@ -74,18 +75,13 @@ public abstract class AbstractScannedResultCollector implements ScannedResultCol
     for (short i = 0; i < measureInfo.getMeasureDataTypes().length; i++) {
       // if measure exists is block then pass measure column
       // data chunk to the collector
-<<<<<<< master
+
       if (measureInfo.getMeasureExists()[i]) {
         QueryMeasure queryMeasure = tableBlockExecutionInfos.getQueryMeasures()[measureExistIndex];
         msrValues[i + offset] = getMeasureData(
             scannedResult.getMeasureChunk(measureInfo.getMeasureOrdinals()[measureExistIndex]),
-            scannedResult.getCurrenrRowId(), queryMeasure.getMeasure());
+            scannedResult.getCurrentRowId(), queryMeasure.getMeasure());
         measureExistIndex++;
-=======
-      if (isMeasureExistsInCurrentBlock[i]) {
-        msrValues[i + offset] = getMeasureData(scannedResult.getMeasureChunk(measuresOrdinal[i]),
-            scannedResult.getCurrentRowId(), measureDatatypes[i]);
->>>>>>> CARBONDATA-754
       } else {
         // if not then get the default value and use that value in aggregation
         Object defaultValue = measureInfo.getDefaultValues()[i];

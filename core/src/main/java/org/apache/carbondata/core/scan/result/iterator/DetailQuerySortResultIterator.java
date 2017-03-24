@@ -20,9 +20,12 @@ package org.apache.carbondata.core.scan.result.iterator;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.TreeSet;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
@@ -30,11 +33,15 @@ import org.apache.carbondata.common.logging.LogService;
 import org.apache.carbondata.common.logging.LogServiceFactory;
 import org.apache.carbondata.core.scan.executor.exception.QueryExecutionException;
 import org.apache.carbondata.core.scan.executor.infos.BlockExecutionInfo;
+import org.apache.carbondata.core.scan.expression.exception.FilterUnsupportedException;
 import org.apache.carbondata.core.scan.model.QueryDimension;
 import org.apache.carbondata.core.scan.model.QueryModel;
 import org.apache.carbondata.core.scan.model.SortOrderType;
-import org.apache.carbondata.core.scan.processor.CaculateDataBlocksToScan;
+import org.apache.carbondata.core.scan.processor.AbstractQueryBlockletFilter;
+import org.apache.carbondata.core.scan.processor.BlocksChunkHolder;
+import org.apache.carbondata.core.scan.processor.FilterQueryBlockletFilter;
 import org.apache.carbondata.core.scan.processor.LimitFilteredBlocksChunkHolders;
+import org.apache.carbondata.core.scan.processor.NoFilterQueryBlockletFilter;
 import org.apache.carbondata.core.scan.result.AbstractScannedSortResult;
 import org.apache.carbondata.core.scan.result.BatchResult;
 import org.apache.carbondata.core.scan.result.ScanResultComparator;
@@ -57,12 +64,14 @@ public class DetailQuerySortResultIterator extends AbstractDetailQueryResultIter
 	protected boolean nextBatch = false;
 	
 	protected TreeSet<AbstractScannedSortResult> scannedResultSet;
+	
+	AbstractQueryBlockletFilter blockletFilter;
 
 	//protected List<Future<AbstractScannedSortResult>> scanResultfutureList = new ArrayList<Future<AbstractScannedSortResult>>();
 	//protected List<Future<AbstractSortScanResult>> nextScanResultfutureList = new ArrayList<Future<AbstractSortScanResult>>();
 
 	public DetailQuerySortResultIterator(List<BlockExecutionInfo> infos, QueryModel queryModel,
-			ExecutorService execService)  throws QueryExecutionException, IOException{
+			ExecutorService execService)  throws QueryExecutionException{
 		super(infos, queryModel, execService);
 		
 		// according to limit value to reduce the batch size
@@ -71,7 +80,13 @@ public class DetailQuerySortResultIterator extends AbstractDetailQueryResultIter
 		QueryDimension singleSortDimesion = queryModel.getSortDimensions().get(0);
 		sortType = singleSortDimesion.getSortOrder();
 		scannedResultSet = new TreeSet<AbstractScannedSortResult>(new ScanResultComparator(sortType));
-		generateScannedResultSet(queryModel);
+		try{
+		  generateScannedResultSet(queryModel);
+		}catch (Exception e){
+		  e.printStackTrace();
+		  throw new QueryExecutionException("error: " + e.getMessage());
+		}
+		
 
 		
 	}
@@ -287,31 +302,81 @@ public class DetailQuerySortResultIterator extends AbstractDetailQueryResultIter
 
 
 
-	private void generateScannedResultSet(QueryModel queryModel)  throws QueryExecutionException, IOException{
+	private void generateScannedResultSet(QueryModel queryModel)  throws QueryExecutionException, IOException, InterruptedException, ExecutionException, FilterUnsupportedException{
 
 		//LOGGER.info("blockExecutionInfos: "+ blockExecutionInfos.get(0).getNumberOfBlockToScan());
-		LimitFilteredBlocksChunkHolders blocksChunkHolderLimitFilter = new LimitFilteredBlocksChunkHolders(queryModel.getLimit(),
+		LimitFilteredBlocksChunkHolders limitFilteredBlocksChunkHolders = new LimitFilteredBlocksChunkHolders(queryModel.getLimit(),
 				((BlockExecutionInfo)blockExecutionInfos.get(0)).getAllSortDimensionBlocksIndexes()[0],
 				queryModel.getSortDimensions().get(0).getSortOrder());
 		for (BlockExecutionInfo executionInfo : (List<BlockExecutionInfo>)blockExecutionInfos) {
 
-			// BlockExecutionInfo executionInfo = blockExecutionInfos.get(0);
-			// blockExecutionInfos.remove(executionInfo);
 			queryStatisticsModel.setRecorder(recorder);
-			CaculateDataBlocksToScan.caculateDataBlocksToScan(executionInfo, fileReader, queryStatisticsModel, queryModel, blocksChunkHolderLimitFilter);
+            
+            if (executionInfo.getFilterExecuterTree() != null) {
+              blockletFilter = new FilterQueryBlockletFilter(executionInfo, fileReader,
+                  queryStatisticsModel, execService, sortType);
+            } else {
+              blockletFilter = new NoFilterQueryBlockletFilter(executionInfo, fileReader,
+                  queryStatisticsModel, execService, sortType);
+            }
+			blockletFilter.filterDataBlocklets(executionInfo, fileReader, queryStatisticsModel, queryModel, limitFilteredBlocksChunkHolders);
 		}
-		blockExecutionInfos = null;
+		//blockExecutionInfos = null;
 		
 		//long start = System.currentTimeMillis();
 		//LOGGER.info("blocksChunkHolderLimitFilter size: "+blocksChunkHolderLimitFilter.getRequiredToScanBlocksChunkHolderSet().size());
 
-		scannedResultSet = CaculateDataBlocksToScan.generateAllScannedResultSet(execService, blocksChunkHolderLimitFilter, sortType);
+		scannedResultSet = generateAllScannedResultSet(execService, limitFilteredBlocksChunkHolders, sortType);
 		//long end = System.currentTimeMillis();
 		//LOGGER.info("generateAllScannedResultSet: "+(end -start));
 	}
 
+  // only load the sort dim data ,others will be lazy loaded
+  public TreeSet<AbstractScannedSortResult> generateAllScannedResultSet(ExecutorService execService,
+      LimitFilteredBlocksChunkHolders blocksChunkHolderLimitFilter, SortOrderType sortType)
+      throws IOException {
+    List<Future<AbstractScannedSortResult[]>> scanResultfutureList = new ArrayList<Future<AbstractScannedSortResult[]>>();
+    TreeSet<BlocksChunkHolder> requiredToScanBlocksChunkHolderSet = blocksChunkHolderLimitFilter
+        .getRequiredToScanBlocksChunkHolderSet();
+    TreeSet<AbstractScannedSortResult> scannedResultSet = new TreeSet<AbstractScannedSortResult>(
+        new ScanResultComparator(sortType));
+    try {
 
+      Iterator<BlocksChunkHolder> it = requiredToScanBlocksChunkHolderSet.iterator();
 
+      // byte[] current = blocksChunkHolderLimitFilter.getMinValueForSortKey();
+      while (it.hasNext()) {
+        BlocksChunkHolder blocksChunkHolder = it.next();
+
+        scanResultfutureList.add(blockletFilter.executeRead(execService, blocksChunkHolder));
+
+      }
+
+      // long start = System.currentTimeMillis();
+      for (int i = 0; i < scanResultfutureList.size(); i++) {
+        Future<AbstractScannedSortResult[]> futureResult = scanResultfutureList.get(i);
+
+        AbstractScannedSortResult[] detailedScannedResults = futureResult.get();
+
+        // LOGGER.info("detailedScannedResult.getCurrentSortDimentionKey()"
+        // + detailedScannedResult.getCurrentSortDimentionKey());
+        if (detailedScannedResults != null) {
+          for(AbstractScannedSortResult result : detailedScannedResults){
+            scannedResultSet.add(result);
+          }
+          // printTreeSet(scannedResultSet);
+        } else {
+          LOGGER.info("null result set");
+        }
+
+      }
+
+    } catch (Exception ex) {
+      throw new RuntimeException(ex);
+    }
+
+    return scannedResultSet;
+  }
 
 
 

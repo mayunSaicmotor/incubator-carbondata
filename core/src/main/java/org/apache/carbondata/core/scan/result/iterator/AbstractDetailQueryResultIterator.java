@@ -111,12 +111,11 @@ public abstract class AbstractDetailQueryResultIterator<E> extends CarbonIterato
     } else {
       batchSize = CarbonCommonConstants.DETAIL_QUERY_BATCH_SIZE_DEFAULT;
     }
-<<<<<<< master
-=======
+
     
-    this.blocksChunkHolder = new BlocksChunkHolder(infos.get(0).getTotalNumberDimensionBlock(),
-        infos.get(0).getTotalNumberOfMeasureBlock());
->>>>>>> CARBONDATA-754
+    //this.blocksChunkHolder = new BlocksChunkHolder(infos.get(0).getTotalNumberDimensionBlock(),
+    //    infos.get(0).getTotalNumberOfMeasureBlock());
+
     this.recorder = queryModel.getStatisticsRecorder();
     this.blockExecutionInfos = infos;
     this.fileReader = FileFactory.getFileHolder(

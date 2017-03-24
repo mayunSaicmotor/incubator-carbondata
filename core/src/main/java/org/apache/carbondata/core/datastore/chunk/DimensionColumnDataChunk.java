@@ -119,4 +119,6 @@ public interface DimensionColumnDataChunk {
   void setCompleteRleDataChunk(int[] rleDataChunk);
   int getTotalRowNumber();
 
+  int getSurrogateByPhysicalId(int rowId);
+
 }

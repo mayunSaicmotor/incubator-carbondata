@@ -64,6 +64,24 @@ public abstract class AbstractScannedResult {
    * row mapping indexes
    */
   protected int[][] rowMapping;
+  
+  /**
+   * row mapping indexes
+   */
+  protected int[][] physicalRowMapping;
+  
+  
+  public int[][] getPhysicalRowMapping() {
+    if(physicalRowMapping == null){
+      return rowMapping;
+    }
+    return physicalRowMapping;
+  }
+
+  public void setPhysicalRowMapping(int[][] physicalRowMapping) {
+    this.physicalRowMapping = physicalRowMapping;
+  }
+
   /**
    * key size of the fixed length column
    */
@@ -512,6 +530,16 @@ public abstract class AbstractScannedResult {
       totalNumberOfRows += count;
     }
   }
+  
+  public void setNumberOfRows(int[] numberOfRows, int totalNumberOfRows) {
+    this.numberOfRows = numberOfRows;
+    this.totalNumberOfRows = totalNumberOfRows;
+  }
+  
+  public int[] getNumberOfRows() {
+    return numberOfRows;
+
+  }
 
   /**
    * After applying filter it will return the  bit set with the valid row indexes
@@ -523,6 +551,16 @@ public abstract class AbstractScannedResult {
     this.rowMapping = indexes;
   }
 
+  /**
+   * After applying filter it will return the  bit set with the valid row indexes
+   * so below method will be used to set the row indexes
+   *
+   * @param indexes
+   */
+  public int[][] getIndexes() {
+    return rowMapping;
+  }
+  
   /**
    * Below method will be used to check whether measure value is null or not
    *

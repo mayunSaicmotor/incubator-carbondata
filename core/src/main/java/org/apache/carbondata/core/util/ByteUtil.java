@@ -205,7 +205,22 @@ public final class ByteUtil {
       int minLength = (len1 <= len2) ? len1 : len2;
       return compareTo(buffer1, buffer2, len1, len2, minLength);
     }
+    public int compareTo(byte[] buffer1, byte[] buffer2, boolean dictFlg) {
 
+      // string compare
+      if(! dictFlg){
+        return new String(buffer1).compareTo(new String(buffer2));
+      }
+      // Short circuit equal case
+      if (buffer1 == buffer2) {
+        return 0;
+      }
+      int len1 = buffer1.length;
+      int len2 = buffer2.length;
+      int minLength = (len1 <= len2) ? len1 : len2;
+      return compareTo(buffer1, buffer2, len1, len2, minLength);
+    }
+    
     public int compareTo(byte[] buffer1, byte[] buffer2, int len1, int len2, int minLength) {
       int minWords = 0;
       /*

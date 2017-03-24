@@ -40,6 +40,15 @@ public interface DimensionDataChunkStore {
    * @return row
    */
   byte[] getRow(int rowId);
+  
+  /**
+   * Below method will be used to get the row
+   * based on row id passed
+   *
+   * @param index
+   * @return row
+   */
+  byte[] getPhysicalRow(int rowId);
 
   /**
    * Below method will be used to fill the row values to buffer array
@@ -77,6 +86,7 @@ public interface DimensionDataChunkStore {
    * @return surrogate key
    */
   int getSurrogate(int rowId);
+  int getSurrogateByPhysicalId(int rowId);
 
   /**
    * @return size of each column value

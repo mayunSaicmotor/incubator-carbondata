@@ -87,11 +87,16 @@ public class SafeVariableLengthDimensionDataChunkStore extends SafeAbsractDimens
     }
   }
 
-  @Override public byte[] getRow(int rowId) {
+/*  @Override public byte[] getRow(int rowId) {
     // if column was explicitly sorted we need to get the rowid based inverted index reverse
     if (isExplictSorted) {
       rowId = invertedIndexReverse[rowId];
     }
+    return getPhysicalRow(rowId);
+  }*/
+
+  @Override public byte[] getPhysicalRow(int rowId) {
+
     // now to get the row from memory block we need to do following thing
     // 1. first get the current offset
     // 2. if it's not a last row- get the next row offset
@@ -112,7 +117,7 @@ public class SafeVariableLengthDimensionDataChunkStore extends SafeAbsractDimens
     System.arraycopy(data, currentDataOffset, currentRowData, 0, length);
     return currentRowData;
   }
-
+  
   @Override public int compareTo(int index, byte[] compareValue) {
     // now to get the row from memory block we need to do following thing
     // 1. first get the current offset

@@ -21,6 +21,7 @@ package org.apache.carbondata.core.scan.processor;
 import java.util.TreeSet;
 
 import org.apache.carbondata.core.util.ByteUtil;
+import org.apache.carbondata.core.util.CarbonUtil;
 import org.apache.carbondata.core.scan.model.SortOrderType;
 
 /**
@@ -51,10 +52,7 @@ public class LimitFilteredBlocksChunkHolders {
 		  if(blocksChunkHolder == null){
 			  return;
 		  }
-		  
-//			if(	 blocksChunkHolder.getBlockExecutionInfo().getFilterExecuterTree() != null && blocksChunkHolder.getBlockletScanner().getScannedResultAfterProcessFilter().numberOfOutputRows() == 4057){
-//				System.out.println("rowMapping length: ");
-//			}
+		 
 			
 		  if(minValueForSortKey == null || maxValueForSortKey == null){
 			  
@@ -67,7 +65,7 @@ public class LimitFilteredBlocksChunkHolders {
 			  //  ASC order
 			  if(SortOrderType.ASC.equals(sortType)){
 				  
-				int compare = ByteUtil.UnsafeComparer.INSTANCE.compareTo(blocksChunkHolder.getMinValueForSortKey(), maxValueForSortKey);
+				int compare = ByteUtil.UnsafeComparer.INSTANCE.compareTo(blocksChunkHolder.getMinValueForSortKey(), maxValueForSortKey, true);
 				  //exceed the max value
 
 				if (compare > 0 && this.totalRowNumber > limit) {
@@ -75,7 +73,7 @@ public class LimitFilteredBlocksChunkHolders {
 					return;
 				}
 				
-				compare = ByteUtil.UnsafeComparer.INSTANCE.compareTo(blocksChunkHolder.getMaxValueForSortKey(), minValueForSortKey);			
+				compare = ByteUtil.UnsafeComparer.INSTANCE.compareTo(blocksChunkHolder.getMaxValueForSortKey(), minValueForSortKey, true);			
 				// re-new the set
 				if (compare < 0 && tmpTotalRowNumber >= limit) {
 
@@ -88,19 +86,23 @@ public class LimitFilteredBlocksChunkHolders {
 			
 			  //Desc order
 			  }else{
-					int compare = ByteUtil.UnsafeComparer.INSTANCE.compareTo(blocksChunkHolder.getMaxValueForSortKey(), minValueForSortKey);
+
+					int compare = ByteUtil.UnsafeComparer.INSTANCE.compareTo(blocksChunkHolder.getMaxValueForSortKey(), minValueForSortKey, true);
 					  //exceed the max value
 
 					if (compare < 0 && this.totalRowNumber > limit) {
 						//System.out.println("filter 1 blocklet");
+					  CarbonUtil.freeMemory(blocksChunkHolder.getDimensionRawDataChunk(),
+				          blocksChunkHolder.getMeasureRawDataChunk());
 						return;
 					}
 					
-					compare = ByteUtil.UnsafeComparer.INSTANCE.compareTo(blocksChunkHolder.getMinValueForSortKey(), maxValueForSortKey);			
+					compare = ByteUtil.UnsafeComparer.INSTANCE.compareTo(blocksChunkHolder.getMinValueForSortKey(), maxValueForSortKey, true);			
 					// re-new the set
 					if (compare > 0 && tmpTotalRowNumber >= limit) {
 
-						//System.out.println("re-init the block set");
+					    freeMemoryForFilteredBlocks();
+                        //System.out.println("re-init the block set");
 						initAdd(blocksChunkHolder);
 						return;
 					}
@@ -114,14 +116,22 @@ public class LimitFilteredBlocksChunkHolders {
 	  }
 
 
+    public void freeMemoryForFilteredBlocks() {
+      for(BlocksChunkHolder b : requiredToScanBlocksChunkHolderSet){
+                 CarbonUtil.freeMemory(b.getDimensionRawDataChunk(),
+                      b.getMeasureRawDataChunk());
+      }
+    }
+
+
 	private void addNext(BlocksChunkHolder blocksChunkHolder) {
 		int minCompare = ByteUtil.UnsafeComparer.INSTANCE.compareTo(blocksChunkHolder.getMinValueForSortKey(),
-				minValueForSortKey);
+				minValueForSortKey, true);
 		if (minCompare < 0) {
 			this.minValueForSortKey = blocksChunkHolder.getMinValueForSortKey();
 		}
 		int maxCompare = ByteUtil.UnsafeComparer.INSTANCE.compareTo(blocksChunkHolder.getMaxValueForSortKey(),
-				maxValueForSortKey);
+				maxValueForSortKey, true);
 		if (maxCompare > 0) {
 			this.maxValueForSortKey = blocksChunkHolder.getMaxValueForSortKey();
 		}
@@ -147,7 +157,9 @@ public class LimitFilteredBlocksChunkHolders {
 		//System.out.println("start to initAdd ");
 		  //printByteArray(blocksChunkHolder.getMinValueForSortKey(), requiredToScanBlocksChunkHolderSet);
 		  if (blocksChunkHolder.getBlockExecutionInfo().getFilterExecuterTree() != null) {
-			  return blocksChunkHolder.getBlockletScanner().getScannedResultAfterProcessFilter().numberOfOutputRows();
+		      // TODOTODOTODOTODOTODOTODOTODOTODOTODOTODOTODOTODOTODOTODOTODO
+			  // return blocksChunkHolder.getBlockletScanner().getScannedResultAfterProcessFilter().numberOfOutputRows();
+			  return blocksChunkHolder.getFilteredSize();
 		  }else{
 			  return blocksChunkHolder.getNodeSize(); 
 		  }

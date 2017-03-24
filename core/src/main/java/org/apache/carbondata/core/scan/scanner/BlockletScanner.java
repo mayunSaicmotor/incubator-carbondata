@@ -68,4 +68,7 @@ public interface BlockletScanner {
   AbstractScannedResult createEmptyResult();
   
   AbstractScannedResult getScannedResultAfterProcessFilter();
+  
+  boolean applyFilter(BlocksChunkHolder blocksChunkHolder)
+      throws FilterUnsupportedException, IOException;
 }

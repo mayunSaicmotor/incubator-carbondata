@@ -148,10 +148,8 @@ class CarbonPlanMarker {
         }
       }
     }
-<<<<<<< master
-=======
+    
     // TODO
->>>>>>> CARBONDATA-754
     if (!markerStack.empty()) {
       markerStack.peek().set
     } else {

@@ -117,6 +117,11 @@ public abstract class AbstractDimensionDataChunk implements DimensionColumnDataC
   @Override
   public byte[] getChunkDataByPhysicalRowId(int physicalRowId) {
 
-    return dataChunkStore.getRow(physicalRowId);
+    return dataChunkStore.getPhysicalRow(physicalRowId);
+  }
+  @Override
+  public int getSurrogateByPhysicalId(int rowId){
+    
+    return dataChunkStore.getSurrogateByPhysicalId(rowId);
   }
 }

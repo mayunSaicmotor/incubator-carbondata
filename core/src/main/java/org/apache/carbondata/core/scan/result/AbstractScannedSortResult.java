@@ -86,7 +86,7 @@ public abstract class AbstractScannedSortResult extends AbstractScannedResult {
     if (maxLogicalRowIdByLimit >= 0) {
       return maxLogicalRowIdByLimit;
     }
-    return this.totalNumberOfRows;
+    return numberOfRows[pageCounter];
   }
 
   public void setMaxLogicalRowIdByLimit(int maxLogicalRowIdByLimit) {
@@ -160,13 +160,13 @@ public abstract class AbstractScannedSortResult extends AbstractScannedResult {
     this.currentLogicRowId = currentLogicRowId;
   }
 
-  public int[][] getRowMapping() {
+/*  public int[][] getRowMapping() {
     return rowMapping;
   }
 
   public void setRowMapping(int[][] rowMapping) {
     this.rowMapping = rowMapping;
-  }
+  }*/
 
   protected String stopKey = null;
 
@@ -181,7 +181,7 @@ public abstract class AbstractScannedSortResult extends AbstractScannedResult {
     this.stopKey = stopKey;
   }
 
-  int sortDimentionIndexForSelect;
+  int sortDimentionIndex;
 
   protected String currentSortDimentionKey = null;
 
@@ -254,7 +254,7 @@ public abstract class AbstractScannedSortResult extends AbstractScannedResult {
 
   public boolean hasNextForSort() {
 
-    return rowCounter < this.totalNumberOfRows;
+    return rowCounter < numberOfRowsInCurrentPage;
   }
 
   
@@ -273,59 +273,11 @@ public abstract class AbstractScannedSortResult extends AbstractScannedResult {
     
     caculateCurrentRowId(rowId);
     //TODO
-    //int tmpPhysicalRowId = currentPhysicalRowIdForSortDimension;
-    //int tmpLogicalRowId = this.currentLogicRowId;
-    DimensionColumnDataChunk tmpNextInvertedIndexes =  null;
     for (int i = 0; i < this.dictionaryColumnBlockIndexes.length; i++) {
-        
-       /* // for no sort query 
-            if (sortSingleDimensionBlocksIndex < 0) {
-                //and the dimension which has inverted index
-                // TODO for the first dim, it has no inverted index
-                if (dataChunks[dictionaryColumnBlockIndexes[i]][pageCounter].isExplicitSorted()){//&& dictionaryColumnBlockIndexes[i] != 0) {
-                    tmpPhysicalRowId = dataChunks[dictionaryColumnBlockIndexes[i]][pageCounter].getInvertedIndex(currentLogicRowId);
-                }
-                // tmpPhysicalRowId =
-                // chunkAttributes.getInvertedIndexesReverse()[currentLogicRowId];
-                // invertedRowId =rowId;
-            } else {
 
-                // for dimension which has no inverted index and is not the
-                // specified sort dimension in sql
-                if (sortSingleDimensionBlocksIndex != dictionaryColumnBlockIndexes[i]) {
-
-                    tmpNextInvertedIndexes = dataChunks[dictionaryColumnBlockIndexes[i]][pageCounter];
-                    // System.out.println("rowId: " + rowId);
-                    if (tmpNextInvertedIndexes.isExplicitSorted()) {
-                        // if(baseSortDimentionInvertedIndexes != null ){
-
-                        // int tmpIndex
-                        // =baseSortDimentionInvertedIndexes[rowId];
-                        tmpPhysicalRowId = tmpNextInvertedIndexes.getInvertedIndexReverse(currentLogicRowId);
-                        // }else{
-                        // tmpPhysicalRowId = tmpNextInvertedIndexes[rowId];
-                        // }
-
-                    // for the specified sort dimension in sql
-                    } else {
-
-                        if (!baseSortDimentionDataChunk.isExplicitSorted()) {
-                            tmpPhysicalRowId = currentPhysicalRowIdForSortDimension;
-                        } else {
-                            tmpPhysicalRowId = baseSortDimentionDataChunk.getInvertedIndex(currentPhysicalRowIdForSortDimension);
-                        }
-                    }
-
-                    // for sort dimention, use the rowid directly
-                } else {
-
-                    tmpPhysicalRowId = currentPhysicalRowIdForSortDimension;
-                    sortDimentionIndexForSelect = i;
-                }
-            }*/
-        
-        column = dataChunks[dictionaryColumnBlockIndexes[i]][pageCounter].fillConvertedChunkData(currentLogicRowId, column, completeKey,
-              columnGroupKeyStructureInfo.get(dictionaryColumnBlockIndexes[i]));
+      column = dataChunks[dictionaryColumnBlockIndexes[i]][pageCounter].fillConvertedChunkData(
+          currentLogicRowId, column, completeKey,
+          columnGroupKeyStructureInfo.get(dictionaryColumnBlockIndexes[i]));
 
     }
     
@@ -333,8 +285,8 @@ public abstract class AbstractScannedSortResult extends AbstractScannedResult {
     if(sortByDictionaryDimensionFlg){
         
         if (sortSingleDimensionBlocksIndex >= 0
-                && ((!this.descSortFlg && completeKey[sortDimentionIndexForSelect] > Integer.parseInt(stopKey))
-                        || (this.descSortFlg && completeKey[sortDimentionIndexForSelect] < Integer.parseInt(stopKey)))) {
+                && ((!this.descSortFlg && completeKey[sortDimentionIndex] > Integer.parseInt(stopKey))
+                        || (this.descSortFlg && completeKey[sortDimentionIndex] < Integer.parseInt(stopKey)))) {
             pauseProcessCollectData(completeKey);
             //return completeKey;
         }
@@ -347,7 +299,7 @@ public abstract class AbstractScannedSortResult extends AbstractScannedResult {
  
 public void caculateCurrentRowId(int rowId) {
     
-    currentPhysicalRowIdForSortDimension = rowId;
+    currentPhysicalRowId = rowId;
     //for sort query push down sort
     if(sortSingleDimensionBlocksIndex >= 0){
         
@@ -355,37 +307,37 @@ public void caculateCurrentRowId(int rowId) {
         
         if(baseSortDimentionDataChunk.isExplicitSorted()){
             
-            // set logical row id default value
-            this.currentLogicRowId=baseSortDimentionDataChunk.getInvertedIndex(currentPhysicalRowIdForSortDimension);  
+      
     
             // for filter query
-            if(this.rowMapping != null && this.rowMapping.length > 0){
-                
-                caculateCurrentRowIdForFilterQuery();
-            
+            // if(this.rowMapping != null && this.rowMapping[pageCounter] != null&& this.rowMapping[pageCounter].length > 0){
+            if(this.filterQueryFlg){    
+                //caculateCurrentRowIdForFilterQuery();
+              // set logical row id default value
+              this.currentLogicRowId=baseSortDimentionDataChunk.getInvertedIndex(this.physicalRowMapping[pageCounter][currentPhysicalRowId]);  
             // for no filter query and baseSortDimentionInvertedIndexes != null
             }else{
                 
                 if(this.descSortFlg){               
 
-                    currentPhysicalRowIdForSortDimension = this.totalNumberOfRows- rowId -1;    
+                    currentPhysicalRowId = numberOfRows[pageCounter]- rowId -1;    
                 }
-                this.currentLogicRowId=baseSortDimentionDataChunk.getInvertedIndex(currentPhysicalRowIdForSortDimension);
+                //this.currentLogicRowId=baseSortDimentionDataChunk.getInvertedIndex(currentPhysicalRowIdForSortDimension);
             }
             
         //when baseSortDimentionInvertedIndexes = null  
         }else{
             
             // for filter query
-            if(this.rowMapping != null && this.rowMapping.length > 0){
-                
+            //if(this.rowMapping != null && this.rowMapping[pageCounter] != null&& this.rowMapping[pageCounter].length > 0){
+            if(this.filterQueryFlg){
                 caculateCurrentRowIdForNoInvertedIndexFilterQuery();
             }else{
                 if(this.descSortFlg){
                     
-                    currentPhysicalRowIdForSortDimension = this.totalNumberOfRows- rowId -1;
+                    currentPhysicalRowId = numberOfRows[pageCounter]- rowId -1;
                 }           
-                this.currentLogicRowId=currentPhysicalRowIdForSortDimension;    
+                this.currentLogicRowId=currentPhysicalRowId;    
             }
 
         }
@@ -395,67 +347,44 @@ public void caculateCurrentRowId(int rowId) {
         //TODO
         
         // for filter query
-        if(this.rowMapping != null && this.rowMapping.length > 0){
+        //if(this.rowMapping != null && this.rowMapping[pageCounter] != null&& this.rowMapping[pageCounter].length > 0){
+      if(this.filterQueryFlg){
             this.currentLogicRowId= rowMapping[pageCounter][rowId];
         }else{
             
-            this.currentLogicRowId=currentPhysicalRowIdForSortDimension;
+            this.currentLogicRowId=currentPhysicalRowId;
         }
     }
     //return rowId;
 }
 
-private void caculateCurrentRowIdForFilterQuery() {
+/*private void caculateCurrentRowIdForFilterQuery() {
   if(this.descSortFlg){
+    int findIndex;
       for(int physicalRowId = currentPhysicalIndexForFilter; physicalRowId >=0; physicalRowId--){
           // this.currentFilterPhysicalIndex = Arrays.binarySearch(this.rowMapping, index);
-          if(Arrays.binarySearch(this.rowMapping, baseSortDimentionDataChunk.getInvertedIndex(physicalRowId)) >= 0){
+        findIndex = Arrays.binarySearch(this.rowMapping[pageCounter], baseSortDimentionDataChunk.getInvertedIndex(physicalRowId));
+          if(findIndex >= 0){
               //System.out.println(" filtered index: " + baseSortDimentionInvertedIndexes[index]);
               this.currentPhysicalIndexForFilter = physicalRowId-1;
-              this.currentPhysicalRowIdForSortDimension = physicalRowId;
-              this.currentLogicRowId=baseSortDimentionDataChunk.getInvertedIndex(currentPhysicalRowIdForSortDimension);  
+              this.currentPhysicalRowId = physicalRowId;
+              this.currentLogicRowId=this.rowMapping[pageCounter][findIndex];  
               break;
           }
           
       }
   } else {
       // TODO
-      for(int index = currentPhysicalIndexForFilter; index < this.totalNumberOfRows; index++){
+    int findIndex;
+      for(int index = currentPhysicalIndexForFilter; index < numberOfRows[pageCounter]; index++){
       //for(int index = currentPhysicalIndexForFilter; index < baseSortDimentionInvertedIndexes.length; index++){
           // this.currentFilterPhysicalIndex = Arrays.binarySearch(this.rowMapping, index);
-          if(Arrays.binarySearch(this.rowMapping, baseSortDimentionDataChunk.getInvertedIndex(index)) >= 0){
+        findIndex =Arrays.binarySearch(this.rowMapping[pageCounter], baseSortDimentionDataChunk.getInvertedIndex(index));
+          if(findIndex >= 0){
               //System.out.println(" filtered index: " + baseSortDimentionInvertedIndexes[index]);
               this.currentPhysicalIndexForFilter = index+1;
-              this.currentPhysicalRowIdForSortDimension = index;
-              this.currentLogicRowId=baseSortDimentionDataChunk.getInvertedIndex(currentPhysicalRowIdForSortDimension);  
-              break;
-          }
-          
-      }
-  }
-}
-
-/*private void caculateCurrentRowIdForFilterQueryNew() {
-  if(this.descSortFlg){
-      for(int physicalRowId = currentPhysicalIndexForFilter; physicalRowId >=0; physicalRowId--){
-          // this.currentFilterPhysicalIndex = Arrays.binarySearch(this.rowMapping, index);
-          if(Arrays.binarySearch(this.rowMapping, baseSortDimentionInvertedIndexes[physicalRowId]) >= 0){
-              //System.out.println(" filtered index: " + baseSortDimentionInvertedIndexes[index]);
-              this.currentPhysicalIndexForFilter = physicalRowId-1;
-              this.currentPhysicalRowIdForSortDimension = physicalRowId;
-              this.currentLogicRowId=baseSortDimentionInvertedIndexes[currentPhysicalRowIdForSortDimension];  
-              break;
-          }
-          
-      }
-  } else {
-      for(int index = currentPhysicalIndexForFilter; index < baseSortDimentionInvertedIndexes.length; index++){
-          // this.currentFilterPhysicalIndex = Arrays.binarySearch(this.rowMapping, index);
-          if(Arrays.binarySearch(this.rowMapping, baseSortDimentionInvertedIndexes[index]) >= 0){
-              //System.out.println(" filtered index: " + baseSortDimentionInvertedIndexes[index]);
-              this.currentPhysicalIndexForFilter = index+1;
-              this.currentPhysicalRowIdForSortDimension = index;
-              this.currentLogicRowId=baseSortDimentionInvertedIndexes[currentPhysicalRowIdForSortDimension];  
+              this.currentPhysicalRowId = index;
+              this.currentLogicRowId=this.rowMapping[pageCounter][findIndex];  
               break;
           }
           
@@ -464,23 +393,24 @@ private void caculateCurrentRowIdForFilterQuery() {
 }*/
 
 
+
 private void caculateCurrentRowIdForNoInvertedIndexFilterQuery() {
   if(this.descSortFlg){
-      if(this.currentPhysicalIndexForFilter >= rowMapping.length){
-          this.currentPhysicalIndexForFilter = this.rowMapping.length -1;
+      if(this.currentPhysicalIndexForFilter >= rowMapping[pageCounter].length){
+          this.currentPhysicalIndexForFilter = this.rowMapping[pageCounter].length -1;
       }
-      this.currentPhysicalRowIdForSortDimension = this.rowMapping[pageCounter][currentPhysicalIndexForFilter];
-      this.currentLogicRowId=this.currentPhysicalRowIdForSortDimension;
+      this.currentPhysicalRowId = this.rowMapping[pageCounter][currentPhysicalIndexForFilter];
+      this.currentLogicRowId=this.currentPhysicalRowId;
       this.currentPhysicalIndexForFilter --;
   } else {
-      this.currentPhysicalRowIdForSortDimension = this.rowMapping[pageCounter][currentPhysicalIndexForFilter];
-      this.currentLogicRowId=this.currentPhysicalRowIdForSortDimension;
+      this.currentPhysicalRowId = this.rowMapping[pageCounter][currentPhysicalIndexForFilter];
+      this.currentLogicRowId=this.currentPhysicalRowId;
       this.currentPhysicalIndexForFilter ++;
   }
 }
 
 public void pauseProcessCollectData(int[] completeKey) {
-  currentSortDimentionKey = Integer.toString(completeKey[sortDimentionIndexForSelect]);
+  currentSortDimentionKey = Integer.toString(completeKey[sortDimentionIndex]);
   currentSortDimentionKeyChgFlg = true;
   pauseProcessForSortFlg = true;
   pausedCompleteKey = completeKey;
@@ -488,7 +418,7 @@ public void pauseProcessCollectData(int[] completeKey) {
 }
 
 public void pauseProcessCollectData(String[] noDictonaryKeys) {
-  currentSortDimentionKey = noDictonaryKeys[sortDimentionIndexForSelect];
+  currentSortDimentionKey = noDictonaryKeys[sortDimentionIndex];
   currentSortDimentionKeyChgFlg = true;
   pauseProcessForSortFlg = true;
   pausedNoDictionaryKeys = noDictonaryKeys;
@@ -540,7 +470,8 @@ public void pauseProcessCollectData(String[] noDictonaryKeys) {
   protected DimensionColumnDataChunk baseSortDimentionDataChunk = null;
   protected int currentPhysicalIndexForFilter = 0;
 
-  protected int currentPhysicalRowIdForSortDimension = 0;
+  // current physical row id for sort dimension
+  protected int currentPhysicalRowId = 0;
 
   /**
    * sorted dimension indexes
@@ -559,14 +490,13 @@ public void pauseProcessCollectData(String[] noDictonaryKeys) {
       sortSingleDimensionBlocksIndex = allSortDimensionBlocksIndexes[0];
       sortDimention = dataChunks[sortSingleDimensionBlocksIndex][pageCounter];
       baseSortDimentionDataChunk = dataChunks[sortSingleDimensionBlocksIndex][pageCounter];
-
       for (int i = 0; i < this.dictionaryColumnBlockIndexes.length; i++) {
         if (dictionaryColumnBlockIndexes[i] == sortSingleDimensionBlocksIndex) {
+          sortDimentionIndex = i;
           sortByDictionaryDimensionFlg = true;
           break;
         }
       }
-
       if (!sortByDictionaryDimensionFlg) {
 
         for (int i = 0; i < this.noDictionaryColumnBlockIndexes.length; i++) {
@@ -591,53 +521,63 @@ public void pauseProcessCollectData(String[] noDictonaryKeys) {
    * this.currentSortDimentionKey = keyArr[0]; }
    */
 
-  public boolean hasNextCurrentDictionaryKeyForSortDimention() {
-    return rowCounter < this.totalNumberOfRows;
-  }
-
   public void initCurrentKeyForSortDimention(SortOrderType sortType) {
 
     this.sortType = sortType;
+    if(this.filterQueryFlg){
+      numberOfRowsInCurrentPage = this.physicalRowMapping[pageCounter].length;
+    }else{
+      numberOfRowsInCurrentPage = this.numberOfRows[pageCounter];
+    }
     if (SortOrderType.DSC.equals(sortType)) {
       this.descSortFlg = true;
-      // currentRow = this.totalNumberOfRows;
-      currentPhysicalIndexForFilter = totalNumberOfRows - 1;
-  /*    if (baseSortDimentionInvertedIndexes != null) {
+      currentPhysicalIndexForFilter = numberOfRows[pageCounter] - 1;
 
-        currentPhysicalIndexForFilter = baseSortDimentionInvertedIndexes.length - 1;
-      } else {
-
-        currentPhysicalIndexForFilter = totalNumberOfRows - 1;
-      }*/
 
     }
-    nextCurrentKeyForSortDimention();
-  }
-
-  public void nextCurrentKeyForSortDimention() {
-
-    int[] keyArr = new int[1];
-
     if (this.sortByDictionaryDimensionFlg) {
-      sortDimention.fillConvertedChunkData(getStartRowIndex(), 0, keyArr,
-          columnGroupKeyStructureInfo.get(sortSingleDimensionBlocksIndex));
-      this.currentSortDimentionKey = Integer.toString(keyArr[0]);
-    } else if (this.sortByNoDictionaryDimensionFlg) {
-
-      // sortDimention.fillConvertedChunkData(getStartRowIndex(), 0, keyArr,
-      // columnGroupKeyStructureInfo.get(sortSingleDimensionBlocksIndex));
-      this.currentSortDimentionKey = new String(
-          sortDimention.getChunkDataByPhysicalRowId(getStartRowIndex()));
-
-    } else {
-
-      // TODO
-      this.currentSortDimentionKey = new String(sortDimention.getChunkData(getStartRowIndex()));
-
-    }
-
+          
+          this.currentSortDimentionKey = Integer.toString(sortDimention.getSurrogateByPhysicalId(getStartPhysicalRowId()));
+          // System.out.println("currentSortDimentionKey: " + currentSortDimentionKey);
+        } else if (this.sortByNoDictionaryDimensionFlg) {
+    
+          this.currentSortDimentionKey = new String(sortDimention.getChunkDataByPhysicalRowId(getStartPhysicalRowId()));
+    
+        } else {
+    
+          // TODO
+          this.currentSortDimentionKey = new String(sortDimention.getChunkDataByPhysicalRowId(getStartPhysicalRowId()));
+    
+        }
+    // System.out.println("currentSortDimentionKey: " + currentSortDimentionKey);
   }
 
+
+private int getStartPhysicalRowId() {
+    int startIndex;
+    if(descSortFlg){
+      if(this.filterQueryFlg){
+        startIndex =this.physicalRowMapping[pageCounter][this.physicalRowMapping[pageCounter].length-1];
+      }else{
+        startIndex  = sortDimention.getTotalRowNumber() - 1;
+      }
+    }else{
+      if(this.filterQueryFlg){
+        startIndex =this.physicalRowMapping[pageCounter][0];
+      }else{
+        startIndex  = rowCounter;
+      }
+      
+    }
+    
+    return startIndex;
+/*    if (sortDimention.isExplicitSorted()) {
+      return sortDimention
+          .getInvertedIndex(descSortFlg ? sortDimention.getTotalRowNumber() - 1 : rowCounter);
+    }
+    return descSortFlg ? sortDimention.getTotalRowNumber() - 1 : rowCounter;*/
+  }
+  
   public void decrementRowCounter() {
     rowCounter--;
   }
@@ -645,9 +585,16 @@ public void pauseProcessCollectData(String[] noDictonaryKeys) {
   public void incrementRowCounter() {
     rowCounter++;
   }
-  private int getStartRowIndex() {
 
-    return descSortFlg ? sortDimention.getTotalRowNumber() - 1 : rowCounter;
+
+  protected int numberOfRowsInCurrentPage = 0;
+  protected int validPageCnt = 0;
+  public void setValidPageCnt(int validPageCnt) {
+    this.validPageCnt = validPageCnt;
   }
- 
+  
+  public int getValidPageCnt() {
+    return  validPageCnt;
+  }
+  
 }

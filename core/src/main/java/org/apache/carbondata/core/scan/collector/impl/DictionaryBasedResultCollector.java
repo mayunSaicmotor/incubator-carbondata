@@ -97,42 +97,9 @@ public class DictionaryBasedResultCollector extends AbstractScannedResultCollect
         dictionaryColumnIndex = 0;
         noDictionaryColumnIndex = 0;
         complexTypeColumnIndex = 0;
-<<<<<<< master
         for (int i = 0; i < queryDimensions.length; i++) {
           fillDimensionData(scannedResult, surrogateResult, noDictionaryKeys, complexTypeKeyArray,
               comlexDimensionInfoMap, row, i);
-=======
-        for (int i = 0; i < dimSize; i++) {
-          if (!dictionaryEncodingArray[i]) {
-            if (implictColumnArray[i]) {
-              if (CarbonCommonConstants.CARBON_IMPLICIT_COLUMN_TUPLEID
-                  .equals(queryDimensions[i].getDimension().getColName())) {
-                row[order[i]] = DataTypeUtil.getDataBasedOnDataType(
-                    scannedResult.getBlockletId() + CarbonCommonConstants.FILE_SEPARATOR
-                        + scannedResult.getCurrentRowId(), DataType.STRING);
-              } else {
-                row[order[i]] = DataTypeUtil
-                    .getDataBasedOnDataType(scannedResult.getBlockletId(), DataType.STRING);
-              }
-            } else {
-              row[order[i]] = DataTypeUtil
-                  .getDataBasedOnDataType(noDictionaryKeys[noDictionaryColumnIndex++],
-                      queryDimensions[i].getDimension().getDataType());
-            }
-          } else if (directDictionaryEncodingArray[i]) {
-            if (directDictionaryGenerators[i] != null) {
-              row[order[i]] = directDictionaryGenerators[i].getValueFromSurrogate(
-                  surrogateResult[actualIndexInSurrogateKey[dictionaryColumnIndex++]]);
-            }
-          } else if (complexDataTypeArray[i]) {
-            row[order[i]] = comlexDimensionInfoMap
-                .get(queryDimensions[i].getDimension().getOrdinal())
-                .getDataBasedOnDataTypeFromSurrogates(
-                    ByteBuffer.wrap(complexTypeKeyArray[complexTypeColumnIndex++]));
-          } else {
-            row[order[i]] = surrogateResult[actualIndexInSurrogateKey[dictionaryColumnIndex++]];
-          }
->>>>>>> CARBONDATA-754
         }
       } else {
         scannedResult.incrementCounter();
@@ -157,7 +124,7 @@ public class DictionaryBasedResultCollector extends AbstractScannedResultCollect
             .equals(queryDimensions[i].getDimension().getColName())) {
           row[order[i]] = DataTypeUtil.getDataBasedOnDataType(
               scannedResult.getBlockletId() + CarbonCommonConstants.FILE_SEPARATOR
-                  + scannedResult.getCurrenrRowId(), DataType.STRING);
+                  + scannedResult.getCurrentRowId(), DataType.STRING);
         } else {
           row[order[i]] = DataTypeUtil
               .getDataBasedOnDataType(scannedResult.getBlockletId(), DataType.STRING);
