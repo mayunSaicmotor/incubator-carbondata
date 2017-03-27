@@ -44,7 +44,8 @@ import org.apache.carbondata.core.constants.CarbonCommonConstants
 import org.apache.carbondata.core.scan.model.QueryDimension
 import org.apache.carbondata.spark.CarbonAliasDecoderRelation
 import org.apache.carbondata.spark.exception.MalformedCarbonCommandException
-import org.apache.spark.sql.execution.Sort
+import org.apache.spark.sql.execution.TungstenMergeSort
+import org.apache.spark.sql.execution.TakeOrderedAndProject
 
 
 
@@ -90,16 +91,21 @@ class CarbonStrategies(sqlContext: SQLContext) extends QueryPlanner[SparkPlan] {
             profile,
             aliasMap,
             planLater(child))(sqlContext) :: Nil
-        case CarbonMergeSort(sortExprs, global, child) =>
+        case CarbonMergeSort(limit, sortExprs, global, child) =>
 
-//              TakeOrderedAndProject(
-//                10000,
-//                sortExprs,
-//                Nonthing,
-//                planLater(child)) :: Nil
+              var limitValue = limit;
+              if(limitValue <= 0){
+                // means get all data
+                limitValue = Int.MaxValue
+              }
+              TakeOrderedAndProject(
+                limitValue,
+                sortExprs,
+                None,
+                planLater(child)) :: Nil
 
         //TungstenMergeSort(sortExprs, global, planLater(child)):: Nil
-        Sort(sortExprs, global, planLater(child)):: Nil
+        //TungstenMergeSort(sortExprs, global, planLater(child)):: Nil
         case _ =>
           Nil
       }

@@ -87,7 +87,7 @@ case class CarbonDictionaryCatalystDecoder(
 
 case class CarbonPushDownToScan(
     order : Seq[QueryDimension], 
-    limit : Expression,
+    limit : Int,
     groupingExpressions: Seq[Expression],
     aggregateExpressions: Seq[NamedExpression],
     child: LogicalPlan

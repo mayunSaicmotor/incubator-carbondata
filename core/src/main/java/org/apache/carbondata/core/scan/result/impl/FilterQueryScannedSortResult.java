@@ -89,6 +89,53 @@ public class FilterQueryScannedSortResult extends AbstractScannedSortResult {
     //return rowMapping[pageCounter][currentRow];
     return currentLogicRowId;
   }
+@Override
+public void caculateCurrentRowId(int rowId) {
+    
+    currentPhysicalRowId = rowId;
+    //for sort query push down sort
+    //if(sortSingleDimensionBlocksIndex >= 0){
+        
+        //baseSortDimentionInvertedIndexes = dataChunks[sortSingleDimensionBlocksIndex].getAttributes().getInvertedIndexes();
+        
+    if (baseSortDimentionDataChunk.isExplicitSorted()) {
 
+      // for filter query
+      // if(this.rowMapping != null && this.rowMapping[pageCounter] != null&&
+      // this.rowMapping[pageCounter].length > 0){
+      if (this.filterQueryFlg) {
 
+        if (this.descSortFlg) {
+          currentPhysicalRowId = this.physicalRowMapping[pageCounter].length - rowId - 1;
+          this.currentLogicRowId = baseSortDimentionDataChunk
+              .getInvertedIndex(this.physicalRowMapping[pageCounter][currentPhysicalRowId]);
+        } else {
+          this.currentLogicRowId = baseSortDimentionDataChunk.getInvertedIndex(this.physicalRowMapping[pageCounter][rowId]);
+        }
+      }
+
+      // when baseSortDimentionInvertedIndexes = null
+    } else {
+
+      caculateCurrentRowIdForNoInvertedIndexFilterQuery();
+    }
+        
+    //for no sort query
+    //}
+}
+
+private void caculateCurrentRowIdForNoInvertedIndexFilterQuery() {
+  if(this.descSortFlg){
+      if(this.currentPhysicalIndexForFilter >= rowMapping[pageCounter].length){
+          this.currentPhysicalIndexForFilter = this.rowMapping[pageCounter].length -1;
+      }
+      this.currentPhysicalRowId = this.rowMapping[pageCounter][currentPhysicalIndexForFilter];
+      this.currentLogicRowId=this.currentPhysicalRowId;
+      this.currentPhysicalIndexForFilter --;
+  } else {
+      this.currentPhysicalRowId = this.rowMapping[pageCounter][currentPhysicalIndexForFilter];
+      this.currentLogicRowId=this.currentPhysicalRowId;
+      this.currentPhysicalIndexForFilter ++;
+  }
+}
 }

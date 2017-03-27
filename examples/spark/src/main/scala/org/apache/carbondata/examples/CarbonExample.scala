@@ -35,8 +35,7 @@ object CarbonExample {
     cc.sql("""
            CREATE TABLE IF NOT EXISTS t3
            (ID Int, date Timestamp, country String,
-           name String, phonetype String, serialname String, salary Int,
-           name1 String, name2 String, name3 String, name4 String, name5 String, name6 String,name7 String,name8 String
+           name String, phonetype String, serialname String, salary Int
            
            )
            STORED BY 'carbondata'

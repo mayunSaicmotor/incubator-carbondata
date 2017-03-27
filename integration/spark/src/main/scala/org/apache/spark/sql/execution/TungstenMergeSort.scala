@@ -17,28 +17,15 @@
 
 package org.apache.spark.sql.execution
 
-import org.apache.spark.TaskContext
+import org.apache.spark.{InternalAccumulator, SparkEnv, TaskContext}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.Attribute
-import org.apache.spark.sql.catalyst.expressions.BindReferences
-import org.apache.spark.sql.catalyst.expressions.SortOrder
-import org.apache.spark.sql.catalyst.expressions.SortPrefix
-import org.apache.spark.sql.catalyst.expressions.UnsafeProjection
-import org.apache.spark.sql.catalyst.plans.physical.Distribution
-import org.apache.spark.sql.catalyst.plans.physical.OrderedDistribution
-import org.apache.spark.sql.catalyst.plans.physical.UnspecifiedDistribution
-import org.apache.spark.sql.types.StructType
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-// This file defines various sort operators.
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
+import org.apache.spark.sql.catalyst.expressions._
+import org.apache.spark.sql.catalyst.plans.physical.{Distribution, OrderedDistribution, UnspecifiedDistribution}
+import org.apache.spark.sql.execution.metric.SQLMetrics
 
 /**
- * Optimized version of [[ExternalSort]] that operates on binary data (implemented as part of
- * Project Tungsten).
+ * Performs (external) sorting.
  *
  * @param global when true performs a global sort of all partitions by shuffling the data first
  *               if necessary.
@@ -63,17 +50,18 @@ case class TungstenMergeSort(
   override def requiredChildDistribution: Seq[Distribution] =
     if (global) OrderedDistribution(sortOrder) :: Nil else UnspecifiedDistribution :: Nil
 
+  override private[sql] lazy val metrics = Map(
+    "dataSize" -> SQLMetrics.createSizeMetric(sparkContext, "data size"),
+    "spillSize" -> SQLMetrics.createSizeMetric(sparkContext, "spill size"))
+
   protected override def doExecute(): RDD[InternalRow] = {
     val schema = child.schema
     val childOutput = child.output
 
-    /**
-     * Set up the sorter in each partition before computing the parent partition.
-     * This makes sure our sorter is not starved by other sorters used in the same task.
-     */
-    def preparePartition(): UnsafeExternalRowSorter = {
-      //var start = System.currentTimeMillis()
+    val dataSize = longMetric("dataSize")
+    val spillSize = longMetric("spillSize")
 
+    child.execute().mapPartitionsInternal { iter =>
       val ordering = newOrdering(sortOrder, childOutput)
 
       // The comparator for comparing prefix
@@ -88,68 +76,25 @@ case class TungstenMergeSort(
         }
       }
 
-      //val pageSize = SparkEnv.get.shuffleMemoryManager.pageSizeBytes
+      val pageSize = SparkEnv.get.memoryManager.pageSizeBytes
       val sorter = new UnsafeExternalRowSorter(
-        schema, ordering, prefixComparator, prefixComputer, 1024)
+        schema, ordering, prefixComparator, prefixComputer, pageSize)
       if (testSpillFrequency > 0) {
         sorter.setTestSpillFrequency(testSpillFrequency)
       }
 
-      //var end = System.currentTimeMillis()
-      //println("preparePartition for sort: " + (end - start))
+      // Remember spill data size of this task before execute this operator so that we can
+      // figure out how many bytes we spilled for this operator.
+      val spillSizeBefore = TaskContext.get().taskMetrics().memoryBytesSpilled
 
-      sorter
+      val sortedIterator = sorter.sort(iter.asInstanceOf[Iterator[UnsafeRow]])
+
+      dataSize += sorter.getPeakMemoryUsage
+      spillSize += TaskContext.get().taskMetrics().memoryBytesSpilled - spillSizeBefore
+
+      TaskContext.get().internalMetricsToAccumulators(
+        InternalAccumulator.PEAK_EXECUTION_MEMORY).add(sorter.getPeakMemoryUsage)
+      sortedIterator
     }
-
-    /** Compute a partition using the sorter already set up previously. */
-    def executePartition(
-        taskContext: TaskContext,
-        partitionIndex: Int,
-        sorter: UnsafeExternalRowSorter,
-        parentIterator: Iterator[InternalRow]): Iterator[InternalRow] = {
-     // var start = System.currentTimeMillis()
-      // val sortedIterator = sorter.sort(parentIterator.asInstanceOf[Iterator[UnsafeRow]])
-    // taskContext.internalMetricsToAccumulators(
-    // InternalAccumulator.PEAK_EXECUTION_MEMORY).add(sorter.getPeakMemoryUsage)
-
-      // var end = System.currentTimeMillis()
-     // println("sort query time: " + (end - start))
-      parentIterator
-    }
-
-    // Note: we need to set up the external sorter in each partition before computing
-    // the parent partition, so we cannot simply use `mapPartitions` here (SPARK-9709).
-    // new MapPartitionsWithPreparationRDD[InternalRow, InternalRow, UnsafeExternalRowSorter](
-      // child.execute(), preparePartition, executePartition, preservesPartitioning = true)
-
-    null
   }
-
-}
-
-object TungstenMergeSort {
-  /**
-   * Return true if UnsafeExternalSort can sort rows with the given schema, false otherwise.
-   */
-  def supportsSchema(schema: StructType): Boolean = {
-   // UnsafeExternalRowSorter.supportsSchema(schema)
-    true
-  }
-
- /*   case class TakeOrdered(limit: Int, sortOrder: Seq[SortOrder], child: SparkPlan)
-                      (@transient sqlContext: SQLContext) extends UnaryNode {
-  override def otherCopyArgs = sqlContext :: Nil
-
-  override def output = child.output
-
-  @transient
-  lazy val ordering = new RowOrdering(sortOrder)
-  
-  override def executeCollect() = child.execute().map(_.copy()).takeOrdered(limit)(ordering)
-  
-  // TODO: Terminal split should be implemented differently from non-terminal split.
-  // TODO: Pick num splits based on |limit|.
-  override def execute() = sqlContext.sparkContext.makeRDD(executeCollect(), 1)
-}*/
-
 }

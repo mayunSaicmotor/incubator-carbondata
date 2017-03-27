@@ -201,17 +201,22 @@ public class FilterSortScanner extends AbstractBlockletSortScanner {
     int[] rowCount = new int[bitSetGroup.getNumberOfPages()];
     // get the row indexes from bot set
     int[][] indexesGroup = new int[bitSetGroup.getNumberOfPages()][];
-    int[][] physicalIndexesGroup = new int[bitSetGroup.getNumberOfPages()][];
+    boolean isExplicitSortedFlg = dimensionColumnDataChunks[sortIndex][0].isExplicitSorted();
+    int[][] physicalIndexesGroup = isExplicitSortedFlg ? new int[bitSetGroup.getNumberOfPages()][]
+        : null;
     //List<Integer> validPageList =  new ArrayList<Integer>(indexesGroup.length);
     int validPageCnt = 0;
     for (int k = 0; k < indexesGroup.length; k++) {
       BitSet bitSet = bitSetGroup.getBitSet(k);
       if (bitSet != null && !bitSet.isEmpty()) {
         int[] indexes = new int[bitSet.cardinality()];
-        int[] physicalIndexes = new int[indexes.length];
+        int[] physicalIndexes = isExplicitSortedFlg ? physicalIndexes = new int[indexes.length]
+            : null;
         int index = 0;
         for (int i = bitSet.nextSetBit(0); i >= 0; i = bitSet.nextSetBit(i + 1)) {
-          physicalIndexes[index] = dimensionColumnDataChunks[sortIndex][k].getInvertedIndexReverse(i);
+          if(isExplicitSortedFlg){
+            physicalIndexes[index] = dimensionColumnDataChunks[sortIndex][k].getInvertedIndexReverse(i);
+          }
           indexes[index++] = i;
          
         }
@@ -222,15 +227,17 @@ public class FilterSortScanner extends AbstractBlockletSortScanner {
           rowCount[k] = indexes.length;
         }
         indexesGroup[k] = indexes;
-        long start = System.currentTimeMillis();
-        Arrays.sort(physicalIndexes);
-        System.out.println("physicalIndexes.length: "+physicalIndexes.length+" sort time: " + (System.currentTimeMillis()-start));
-        physicalIndexesGroup[k] = physicalIndexes;
+        if(isExplicitSortedFlg){
+          long start = System.currentTimeMillis();
+          Arrays.sort(physicalIndexes);
+          // System.out.println("physicalIndexes.length: "+physicalIndexes.length+" sort time: " + (System.currentTimeMillis()-start));
+          physicalIndexesGroup[k] = physicalIndexes;
+        }
       }
     }
     scannedResult.setValidPageCnt(validPageCnt);
     scannedResult.setIndexes(indexesGroup);
-    scannedResult.setPhysicalRowMapping(physicalIndexesGroup);
+    scannedResult.setPhysicalRowMapping(isExplicitSortedFlg ? physicalIndexesGroup : indexesGroup);
     scannedResult.setNumberOfRows(rowCount);
     scannedResult.setDimensionChunks(dimensionColumnDataChunks);
     scannedResult.setFilterQueryFlg(true);

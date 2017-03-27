@@ -86,4 +86,31 @@ public class NonFilterQueryScannedSortResult extends AbstractScannedSortResult {
     return currentLogicRowId;
   }
 
+  
+  @Override
+  public void caculateCurrentRowId(int rowId) {
+
+      currentPhysicalRowId = rowId;
+      // baseSortDimentionInvertedIndexes =
+      // dataChunks[sortSingleDimensionBlocksIndex].getAttributes().getInvertedIndexes();
+
+      if (baseSortDimentionDataChunk.isExplicitSorted()) {
+
+        if (this.descSortFlg) {
+
+          currentPhysicalRowId = numberOfRows[pageCounter] - rowId - 1;
+        }
+        this.currentLogicRowId=baseSortDimentionDataChunk.getInvertedIndex(currentPhysicalRowId);
+
+        // when baseSortDimentionInvertedIndexes = null
+      } else {
+
+        if (this.descSortFlg) {
+
+          currentPhysicalRowId = numberOfRows[pageCounter] - rowId - 1;
+        }
+        this.currentLogicRowId = currentPhysicalRowId;
+
+      }
+  }
 }

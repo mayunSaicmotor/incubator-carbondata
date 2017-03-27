@@ -44,7 +44,7 @@ public interface CarbonV3DataFormatConstants {
   /**
    * number of column to be read in one IO in query default value
    */
-  String NUMBER_OF_COLUMN_TO_READ_IN_IO_DEFAULTVALUE = "10";
+  String NUMBER_OF_COLUMN_TO_READ_IN_IO_DEFAULTVALUE = "6";
 
   /**
    * number of column to be read in one IO in query max value
@@ -64,12 +64,12 @@ public interface CarbonV3DataFormatConstants {
   /**
    * number of rows per blocklet column page default value
    */
-  String NUMBER_OF_ROWS_PER_BLOCKLET_COLUMN_PAGE_DEFAULT = "32000";
+  String NUMBER_OF_ROWS_PER_BLOCKLET_COLUMN_PAGE_DEFAULT = "60000";
 
   /**
    * number of rows per blocklet column page max value
    */
-  short NUMBER_OF_ROWS_PER_BLOCKLET_COLUMN_PAGE_MAX = 32000;
+  int NUMBER_OF_ROWS_PER_BLOCKLET_COLUMN_PAGE_MAX = 60000;
 
   /**
    * number of rows per blocklet column page min value

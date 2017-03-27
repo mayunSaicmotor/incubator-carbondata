@@ -20,7 +20,6 @@ package org.apache.carbondata.core.scan.result.iterator;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.TreeSet;
@@ -81,7 +80,7 @@ public class DetailQuerySortResultIterator extends AbstractDetailQueryResultIter
 		sortType = singleSortDimesion.getSortOrder();
 		scannedResultSet = new TreeSet<AbstractScannedSortResult>(new ScanResultComparator(sortType));
 		try{
-		  generateScannedResultSet(queryModel);
+		  scanAndGenerateScannedResultSet(queryModel);
 		}catch (Exception e){
 		  e.printStackTrace();
 		  throw new QueryExecutionException("error: " + e.getMessage());
@@ -302,7 +301,7 @@ public class DetailQuerySortResultIterator extends AbstractDetailQueryResultIter
 
 
 
-	private void generateScannedResultSet(QueryModel queryModel)  throws QueryExecutionException, IOException, InterruptedException, ExecutionException, FilterUnsupportedException{
+	private void scanAndGenerateScannedResultSet(QueryModel queryModel)  throws QueryExecutionException, IOException, InterruptedException, ExecutionException, FilterUnsupportedException{
 
 		//LOGGER.info("blockExecutionInfos: "+ blockExecutionInfos.get(0).getNumberOfBlockToScan());
 		LimitFilteredBlocksChunkHolders limitFilteredBlocksChunkHolders = new LimitFilteredBlocksChunkHolders(queryModel.getLimit(),
@@ -319,16 +318,17 @@ public class DetailQuerySortResultIterator extends AbstractDetailQueryResultIter
               blockletFilter = new NoFilterQueryBlockletFilter(executionInfo, fileReader,
                   queryStatisticsModel, execService, sortType);
             }
+            long start = System.currentTimeMillis();
 			blockletFilter.filterDataBlocklets(executionInfo, fileReader, queryStatisticsModel, queryModel, limitFilteredBlocksChunkHolders);
+			System.out.println("filterDataBlocklets: "+(System.currentTimeMillis() -start));
 		}
 		//blockExecutionInfos = null;
 		
-		//long start = System.currentTimeMillis();
+		long start = System.currentTimeMillis();
 		//LOGGER.info("blocksChunkHolderLimitFilter size: "+blocksChunkHolderLimitFilter.getRequiredToScanBlocksChunkHolderSet().size());
 
 		scannedResultSet = generateAllScannedResultSet(execService, limitFilteredBlocksChunkHolders, sortType);
-		//long end = System.currentTimeMillis();
-		//LOGGER.info("generateAllScannedResultSet: "+(end -start));
+		System.out.println("generateAllScannedResultSet: "+(System.currentTimeMillis() -start));
 	}
 
   // only load the sort dim data ,others will be lazy loaded

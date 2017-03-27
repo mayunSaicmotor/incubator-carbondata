@@ -43,13 +43,13 @@ object PhysicalOperationForPushdown extends PredicateHelper {
       case CarbonPushDownToScan(order, limit, groupingExpressions, aggregateExpressions, child) =>
         val (fields, filters, other, aliases,
             _, _, _, _) = collectSortsAndProjectsAndFilters(child)
-        //var findSorts = order
-        var limitVal: Int = 0;
+        // var findSorts = order
+        // var limitVal: Int = 0;
         if (limit != null) {
-          limitVal = limit.asInstanceOf[Literal].value.asInstanceOf[Int]
+          // limitVal = limit.asInstanceOf[Literal].value.asInstanceOf[Int]
         }
         (fields, filters, other, aliases, order,
-            limitVal, groupingExpressions, aggregateExpressions)
+            limit, groupingExpressions, aggregateExpressions)
 
       case Project(fields, child) =>
         val (_, filters, other, aliases, sorts, limitValue, groupingExpressions,

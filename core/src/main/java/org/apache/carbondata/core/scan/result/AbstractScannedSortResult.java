@@ -19,7 +19,6 @@
 package org.apache.carbondata.core.scan.result;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.List;
 
 import org.apache.carbondata.core.constants.CarbonCommonConstants;
@@ -50,7 +49,7 @@ public abstract class AbstractScannedSortResult extends AbstractScannedResult {
 
   //private boolean loadDataDelay = false;
 
-  private boolean filterQueryFlg = false;
+  protected boolean filterQueryFlg = false;
 
   private boolean sortByDictionaryDimensionFlg = false;
   private boolean sortByNoDictionaryDimensionFlg = false;
@@ -296,8 +295,8 @@ public abstract class AbstractScannedSortResult extends AbstractScannedResult {
     //System.out.println("completeKey: "+completeKey.toString());
     return completeKey;
   }
- 
-public void caculateCurrentRowId(int rowId) {
+  public abstract void caculateCurrentRowId(int rowId);
+/*public void caculateCurrentRowId(int rowId) {
     
     currentPhysicalRowId = rowId;
     //for sort query push down sort
@@ -306,9 +305,7 @@ public void caculateCurrentRowId(int rowId) {
         //baseSortDimentionInvertedIndexes = dataChunks[sortSingleDimensionBlocksIndex].getAttributes().getInvertedIndexes();
         
         if(baseSortDimentionDataChunk.isExplicitSorted()){
-            
-      
-    
+
             // for filter query
             // if(this.rowMapping != null && this.rowMapping[pageCounter] != null&& this.rowMapping[pageCounter].length > 0){
             if(this.filterQueryFlg){    
@@ -356,7 +353,7 @@ public void caculateCurrentRowId(int rowId) {
         }
     }
     //return rowId;
-}
+}*/
 
 /*private void caculateCurrentRowIdForFilterQuery() {
   if(this.descSortFlg){
@@ -394,20 +391,7 @@ public void caculateCurrentRowId(int rowId) {
 
 
 
-private void caculateCurrentRowIdForNoInvertedIndexFilterQuery() {
-  if(this.descSortFlg){
-      if(this.currentPhysicalIndexForFilter >= rowMapping[pageCounter].length){
-          this.currentPhysicalIndexForFilter = this.rowMapping[pageCounter].length -1;
-      }
-      this.currentPhysicalRowId = this.rowMapping[pageCounter][currentPhysicalIndexForFilter];
-      this.currentLogicRowId=this.currentPhysicalRowId;
-      this.currentPhysicalIndexForFilter --;
-  } else {
-      this.currentPhysicalRowId = this.rowMapping[pageCounter][currentPhysicalIndexForFilter];
-      this.currentLogicRowId=this.currentPhysicalRowId;
-      this.currentPhysicalIndexForFilter ++;
-  }
-}
+
 
 public void pauseProcessCollectData(int[] completeKey) {
   currentSortDimentionKey = Integer.toString(completeKey[sortDimentionIndex]);
@@ -510,17 +494,6 @@ public void pauseProcessCollectData(String[] noDictonaryKeys) {
     }
   }
 
-  /*
-   * public void setCurrentDictionaryKeyForSortDimention() {
-   * 
-   * 
-   * int[] keyArr = new int[1];
-   * sortDimention.fillConvertedChunkData(currentRow+1, 0, keyArr,
-   * columnGroupKeyStructureInfo.get(sortSingleDimensionBlocksIndex));
-   * 
-   * this.currentSortDimentionKey = keyArr[0]; }
-   */
-
   public void initCurrentKeyForSortDimention(SortOrderType sortType) {
 
     this.sortType = sortType;
@@ -559,7 +532,7 @@ private int getStartPhysicalRowId() {
       if(this.filterQueryFlg){
         startIndex =this.physicalRowMapping[pageCounter][this.physicalRowMapping[pageCounter].length-1];
       }else{
-        startIndex  = sortDimention.getTotalRowNumber() - 1;
+        startIndex  = numberOfRows[pageCounter] - 1;
       }
     }else{
       if(this.filterQueryFlg){
