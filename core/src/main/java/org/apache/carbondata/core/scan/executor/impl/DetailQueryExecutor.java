@@ -39,9 +39,14 @@ public class DetailQueryExecutor extends AbstractQueryExecutor<BatchResult> {
       throws QueryExecutionException, IOException {
     List<BlockExecutionInfo> blockExecutionInfoList = getBlockExecutionInfos(queryModel);
     //TODO for sort, if blockExecutionInfoList.size >1, it can't make sure the data's order in 2 block
-    if (blockExecutionInfoList.size() == 1 && blockExecutionInfoList.get(0).isSortFlg()) {
+    if (blockExecutionInfoList.get(0).isSortFlg()) {
+      if(blockExecutionInfoList.size() == 1){
         return new DetailQuerySortResultIterator(blockExecutionInfoList, queryModel,
-                queryProperties.executorService);
+            queryProperties.executorService);
+      }else{
+         throw new UnsupportedOperationException("if process multi block executions, it can't guarantee the result is sorted");
+      }
+
     }
     this.queryIterator = new DetailQueryResultIterator(
         blockExecutionInfoList,
