@@ -318,17 +318,17 @@ public class DetailQuerySortResultIterator extends AbstractDetailQueryResultIter
               blockletFilter = new NoFilterQueryBlockletFilter(executionInfo, fileReader,
                   queryStatisticsModel, execService, sortType);
             }
-            long start = System.currentTimeMillis();
+            // long start = System.currentTimeMillis();
 			blockletFilter.filterDataBlocklets(executionInfo, fileReader, queryStatisticsModel, queryModel, limitFilteredBlocksChunkHolders);
-			System.out.println("filterDataBlocklets: "+(System.currentTimeMillis() -start));
+			// System.out.println("filterDataBlocklets: "+(System.currentTimeMillis() -start));
 		}
 		//blockExecutionInfos = null;
 		
-		long start = System.currentTimeMillis();
+		// long start = System.currentTimeMillis();
 		//LOGGER.info("blocksChunkHolderLimitFilter size: "+blocksChunkHolderLimitFilter.getRequiredToScanBlocksChunkHolderSet().size());
 
 		scannedResultSet = generateAllScannedResultSet(execService, limitFilteredBlocksChunkHolders, sortType);
-		System.out.println("generateAllScannedResultSet: "+(System.currentTimeMillis() -start));
+		// System.out.println("generateAllScannedResultSet: "+(System.currentTimeMillis() -start));
 	}
 
   // only load the sort dim data ,others will be lazy loaded

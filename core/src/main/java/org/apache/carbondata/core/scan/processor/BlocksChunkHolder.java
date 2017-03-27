@@ -208,15 +208,13 @@ public void setMaxValueForSortKey(byte[] maxValueForSortKey) {
 }
 
   public void setMaxValueForSortKeyForFilterQuery(byte[] maxValueForSortKey) {
-    if (ByteUtil.UnsafeComparer.INSTANCE.compareTo(maxValueForSortKey, this.maxValueForSortKey,
-        true) > 0) {
+    if (ByteUtil.UnsafeComparer.INSTANCE.compareTo(maxValueForSortKey, this.maxValueForSortKey) > 0) {
       this.maxValueForSortKey = maxValueForSortKey;
     }
   }
 
   public void setMinValueForSortKeyForFilterQuery(byte[] minValueForSortKey) {
-    if (ByteUtil.UnsafeComparer.INSTANCE.compareTo(minValueForSortKey, this.minValueForSortKey,
-        true) > 0) {
+    if (ByteUtil.UnsafeComparer.INSTANCE.compareTo(minValueForSortKey, this.minValueForSortKey) > 0) {
       this.minValueForSortKey = minValueForSortKey;
     }
   }

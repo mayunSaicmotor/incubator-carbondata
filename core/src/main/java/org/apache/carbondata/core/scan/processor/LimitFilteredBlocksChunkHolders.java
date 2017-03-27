@@ -65,7 +65,7 @@ public class LimitFilteredBlocksChunkHolders {
 			  //  ASC order
 			  if(SortOrderType.ASC.equals(sortType)){
 				  
-				int compare = ByteUtil.UnsafeComparer.INSTANCE.compareTo(blocksChunkHolder.getMinValueForSortKey(), maxValueForSortKey, true);
+				int compare = ByteUtil.UnsafeComparer.INSTANCE.compareTo(blocksChunkHolder.getMinValueForSortKey(), maxValueForSortKey);
 				  //exceed the max value
 
 				if (compare > 0 && this.totalRowNumber > limit) {
@@ -73,7 +73,7 @@ public class LimitFilteredBlocksChunkHolders {
 					return;
 				}
 				
-				compare = ByteUtil.UnsafeComparer.INSTANCE.compareTo(blocksChunkHolder.getMaxValueForSortKey(), minValueForSortKey, true);			
+				compare = ByteUtil.UnsafeComparer.INSTANCE.compareTo(blocksChunkHolder.getMaxValueForSortKey(), minValueForSortKey);			
 				// re-new the set
 				if (compare < 0 && tmpTotalRowNumber >= limit) {
 
@@ -87,7 +87,7 @@ public class LimitFilteredBlocksChunkHolders {
 			  //Desc order
 			  }else{
 
-					int compare = ByteUtil.UnsafeComparer.INSTANCE.compareTo(blocksChunkHolder.getMaxValueForSortKey(), minValueForSortKey, true);
+					int compare = ByteUtil.UnsafeComparer.INSTANCE.compareTo(blocksChunkHolder.getMaxValueForSortKey(), minValueForSortKey);
 					  //exceed the max value
 
 					if (compare < 0 && this.totalRowNumber > limit) {
@@ -97,7 +97,7 @@ public class LimitFilteredBlocksChunkHolders {
 						return;
 					}
 					
-					compare = ByteUtil.UnsafeComparer.INSTANCE.compareTo(blocksChunkHolder.getMinValueForSortKey(), maxValueForSortKey, true);			
+					compare = ByteUtil.UnsafeComparer.INSTANCE.compareTo(blocksChunkHolder.getMinValueForSortKey(), maxValueForSortKey);			
 					// re-new the set
 					if (compare > 0 && tmpTotalRowNumber >= limit) {
 
@@ -126,12 +126,12 @@ public class LimitFilteredBlocksChunkHolders {
 
 	private void addNext(BlocksChunkHolder blocksChunkHolder) {
 		int minCompare = ByteUtil.UnsafeComparer.INSTANCE.compareTo(blocksChunkHolder.getMinValueForSortKey(),
-				minValueForSortKey, true);
+				minValueForSortKey);
 		if (minCompare < 0) {
 			this.minValueForSortKey = blocksChunkHolder.getMinValueForSortKey();
 		}
 		int maxCompare = ByteUtil.UnsafeComparer.INSTANCE.compareTo(blocksChunkHolder.getMaxValueForSortKey(),
-				maxValueForSortKey, true);
+				maxValueForSortKey);
 		if (maxCompare > 0) {
 			this.maxValueForSortKey = blocksChunkHolder.getMaxValueForSortKey();
 		}

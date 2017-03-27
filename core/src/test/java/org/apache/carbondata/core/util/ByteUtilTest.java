@@ -133,6 +133,45 @@ public class ByteUtilTest extends TestCase {
     }
 
     /**
+     * change int to byte[]
+     * 
+     * @param value
+     * @param size
+     * @return byte[]
+     */
+    private byte[] transferIntToByteArr(int value, int size) {
+      byte[] targets = new byte[size];
+      for (int i = 0; i < size; i++) {
+        int data = value;
+        for (int j = i; j < size - 1; j++) {
+          data = data >> 8;
+        }
+        data = data & 0xFF;
+        targets[i] = (byte) (data & 0xFF);
+      }
+      return targets;
+    }
+    
+    @Test
+    public void testLessThanForDictionaryValues() {
+      int dict1 = 1111;
+      int dict2 = 222;
+  
+      assertTrue(ByteUtil.UnsafeComparer.INSTANCE.compareTo(transferIntToByteArr(dict2, 2),
+          transferIntToByteArr(dict1, 2)) < 0);
+      dict1 = 11999;
+      dict2 = 1200;
+      assertTrue(ByteUtil.UnsafeComparer.INSTANCE.compareTo(transferIntToByteArr(dict2, 2),
+          transferIntToByteArr(dict1, 2)) < 0);
+ 
+      dimensionValue1 = "1111";
+      dimensionValue2 = "222";
+      prepareBuffers();
+      assertTrue(ByteUtil.UnsafeComparer.INSTANCE.compareTo(dimensionValue1.getBytes(),
+          dimensionValue2.getBytes()) < 0);
+    }
+
+    /**
      * This will prepare the byte buffers in the required format for comparision.
      */
     private void prepareBuffers() {
