@@ -27,6 +27,8 @@ import org.apache.carbondata.core.scan.collector.ScannedResultCollector;
 import org.apache.carbondata.core.scan.executor.infos.BlockExecutionInfo;
 import org.apache.carbondata.core.scan.model.SortOrderType;
 import org.apache.carbondata.core.scan.processor.BlocksChunkHolder;
+import org.apache.carbondata.core.util.ByteUtil;
+import org.apache.carbondata.core.util.ByteUtil.UnsafeComparer;
 
 /**
  * In case of detail query we cannot keep all the records in memory so for
@@ -167,22 +169,19 @@ public abstract class AbstractScannedSortResult extends AbstractScannedResult {
     this.rowMapping = rowMapping;
   }*/
 
-  protected String stopKey = null;
+  protected byte[] stopKey = null;
 
-  public String getStopKey() {
+  public byte[] getStopKey() {
     return stopKey;
   }
 
-  public void setStopKey(String stopKey) {
-    if (stopKey == null) {
-      stopKey = "";
-    }
+  public void setStopKey(byte[] stopKey) {
     this.stopKey = stopKey;
   }
 
   int sortDimentionIndex;
 
-  protected String currentSortDimentionKey = null;
+  protected byte[] currentSortDimentionKey = null;
 
   protected boolean currentSortDimentionKeyChgFlg = false;
 
@@ -194,16 +193,17 @@ public abstract class AbstractScannedSortResult extends AbstractScannedResult {
     this.currentSortDimentionKeyChgFlg = currentSortDimentionKeyChgFlg;
   }
 
-  public String getCurrentSortDimentionKey() {
+  public byte[] getCurrentSortDimentionKey() {
     return currentSortDimentionKey;
   }
 
-  public void setCurrentSortDimentionKey(String currentSortDimentionKey) {
+  public void setCurrentSortDimentionKey(byte[] currentSortDimentionKey) {
     this.currentSortDimentionKey = currentSortDimentionKey;
   }
 
   protected int sortSingleDimensionBlocksIndex = -1;
-  protected DimensionColumnDataChunk sortDimention = null;
+  protected DimensionColumnDataChunk sortDimention;
+  protected int sortDimentionValueSize;
   protected boolean pauseProcessForSortFlg = false;
   protected int[] pausedCompleteKey = null;
 
@@ -283,12 +283,16 @@ public abstract class AbstractScannedSortResult extends AbstractScannedResult {
     // for dictionary dimension all key is number, but for no dictionary dimension, it is string
     if(sortByDictionaryDimensionFlg){
         
-        if (sortSingleDimensionBlocksIndex >= 0
-                && ((!this.descSortFlg && completeKey[sortDimentionIndex] > Integer.parseInt(stopKey))
-                        || (this.descSortFlg && completeKey[sortDimentionIndex] < Integer.parseInt(stopKey)))) {
-            pauseProcessCollectData(completeKey);
-            //return completeKey;
-        }
+//        if (sortSingleDimensionBlocksIndex >= 0
+//                && ((!this.descSortFlg && completeKey[sortDimentionIndex] > Integer.parseInt(stopKey))
+//                        || (this.descSortFlg && completeKey[sortDimentionIndex] < Integer.parseInt(stopKey)))) {
+      byte[] sortDimentionKey = ByteUtil.transferIntToByteArray(completeKey[sortDimentionIndex], sortDimentionValueSize);
+      int compareResult = resultComparator.compareTo(sortDimentionKey, stopKey);
+      if (sortSingleDimensionBlocksIndex >= 0 && ((!this.descSortFlg && compareResult > 0)
+          || (this.descSortFlg && compareResult < 0))) {
+        pauseProcessCollectData(completeKey, sortDimentionKey);
+        // return completeKey;
+      }
     }
 
     rowCounter++;
@@ -393,8 +397,8 @@ public abstract class AbstractScannedSortResult extends AbstractScannedResult {
 
 
 
-public void pauseProcessCollectData(int[] completeKey) {
-  currentSortDimentionKey = Integer.toString(completeKey[sortDimentionIndex]);
+public void pauseProcessCollectData(int[] completeKey, byte[] sortDimentionKey) {
+  currentSortDimentionKey = sortDimentionKey;
   currentSortDimentionKeyChgFlg = true;
   pauseProcessForSortFlg = true;
   pausedCompleteKey = completeKey;
@@ -402,7 +406,7 @@ public void pauseProcessCollectData(int[] completeKey) {
 }
 
 public void pauseProcessCollectData(String[] noDictonaryKeys) {
-  currentSortDimentionKey = noDictonaryKeys[sortDimentionIndex];
+  currentSortDimentionKey = noDictonaryKeys[sortDimentionIndex].getBytes();
   currentSortDimentionKeyChgFlg = true;
   pauseProcessForSortFlg = true;
   pausedNoDictionaryKeys = noDictonaryKeys;
@@ -413,11 +417,11 @@ public void pauseProcessCollectData(String[] noDictonaryKeys) {
    *         array forat selected in query
    */
   // TODO
-  public int[] getDictionaryKeyIntegerArrayHasLimitKey(String stopKey) {
+  public int[] getDictionaryKeyIntegerArrayHasLimitKey(byte[] stopKey) {
     if (stopKey == null) {
       if (descSortFlg) {
         if (this.sortByDictionaryDimensionFlg) {
-          this.stopKey = String.valueOf(Integer.MIN_VALUE);
+          this.stopKey = ByteUtil.transferIntToByteArray(Integer.MIN_VALUE, sortDimentionValueSize);
         } else {
           this.stopKey = CarbonCommonConstants.MIN_STR;
         }
@@ -425,7 +429,7 @@ public void pauseProcessCollectData(String[] noDictonaryKeys) {
       } else {
 
         if (this.sortByDictionaryDimensionFlg) {
-          this.stopKey = String.valueOf(Integer.MAX_VALUE);
+          this.stopKey = ByteUtil.transferIntToByteArray(Integer.MAX_VALUE, sortDimentionValueSize);
         } else {
           this.stopKey = CarbonCommonConstants.MAX_STR;
         }
@@ -442,7 +446,7 @@ public void pauseProcessCollectData(String[] noDictonaryKeys) {
   }
 
 
-  public List<Object[]> collectSortedData(int batchSize, String stopKey) throws IOException {
+  public List<Object[]> collectSortedData(int batchSize, byte[] stopKey) throws IOException {
     this.getBlocksChunkHolder().getBlockletScanner().readBlockletForLazyLoad(this);
     return this.scannerResultAggregator.collectSortData(this, batchSize, stopKey);
   }
@@ -473,6 +477,7 @@ public void pauseProcessCollectData(String[] noDictonaryKeys) {
     if (allSortDimensionBlocksIndexes != null && allSortDimensionBlocksIndexes.length > 0) {
       sortSingleDimensionBlocksIndex = allSortDimensionBlocksIndexes[0];
       sortDimention = dataChunks[sortSingleDimensionBlocksIndex][pageCounter];
+      sortDimentionValueSize = sortDimention.getColumnValueSize();
       baseSortDimentionDataChunk = dataChunks[sortSingleDimensionBlocksIndex][pageCounter];
       for (int i = 0; i < this.dictionaryColumnBlockIndexes.length; i++) {
         if (dictionaryColumnBlockIndexes[i] == sortSingleDimensionBlocksIndex) {
@@ -509,20 +514,26 @@ public void pauseProcessCollectData(String[] noDictonaryKeys) {
 
     }
     if (this.sortByDictionaryDimensionFlg) {
-          
-          this.currentSortDimentionKey = Integer.toString(sortDimention.getSurrogateByPhysicalId(getStartPhysicalRowId()));
-          // System.out.println("currentSortDimentionKey: " + currentSortDimentionKey);
-        } else if (this.sortByNoDictionaryDimensionFlg) {
-    
-          this.currentSortDimentionKey = new String(sortDimention.getChunkDataByPhysicalRowId(getStartPhysicalRowId()));
-    
-        } else {
-    
-          // TODO
-          this.currentSortDimentionKey = new String(sortDimention.getChunkDataByPhysicalRowId(getStartPhysicalRowId()));
-    
-        }
-    // System.out.println("currentSortDimentionKey: " + currentSortDimentionKey);
+
+      this.currentSortDimentionKey = ByteUtil.transferIntToByteArray(
+          sortDimention.getSurrogateByPhysicalId(getStartPhysicalRowId()),
+          sortDimentionValueSize);
+      // System.out.println("currentSortDimentionKey: " +
+      // currentSortDimentionKey);
+    } else if (this.sortByNoDictionaryDimensionFlg) {
+
+      this.currentSortDimentionKey = sortDimention
+          .getChunkDataByPhysicalRowId(getStartPhysicalRowId());
+
+    } else {
+
+      // TODO
+      this.currentSortDimentionKey = sortDimention
+          .getChunkDataByPhysicalRowId(getStartPhysicalRowId());
+
+    }
+    // System.out.println("currentSortDimentionKey: " +
+    // currentSortDimentionKey);
   }
 
 
@@ -559,7 +570,7 @@ private int getStartPhysicalRowId() {
     rowCounter++;
   }
 
-
+  UnsafeComparer resultComparator = ByteUtil.UnsafeComparer.INSTANCE;
   protected int numberOfRowsInCurrentPage = 0;
   protected int validPageCnt = 0;
   public void setValidPageCnt(int validPageCnt) {

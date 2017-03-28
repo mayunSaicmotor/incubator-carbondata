@@ -130,7 +130,7 @@ public abstract class AbstractScannedResultCollector implements ScannedResultCol
   
   @Override
   public List<Object[]> collectSortData(AbstractScannedSortResult scannedResult, int batchSize,
-      String stopKey) {
+      byte[] stopKey) {
     // TODO Auto-generated method stub
     return null;
   }

@@ -261,7 +261,7 @@ class ResolveCarbonFunctions(relations: Seq[CarbonDecoderRelation])
               new util.HashSet[AttributeReferenceWrapper](), sort.child)
           }
           // TODO
-          var sortOptimizeFlg = false
+          var sortOptimizeFlg = true
           var findLogicalRelation: LogicalPlan = null;
           var tmpChild = sort.child
           while (tmpChild != null) {
@@ -299,6 +299,7 @@ class ResolveCarbonFunctions(relations: Seq[CarbonDecoderRelation])
                 val carbonDimension =
                   carbonTable.getDimensionByName(carbonTable.getFactTableName, colName)
                 if (carbonDimension == null) {
+                  sortOptimizeFlg = false
                   null
                 } else {
                   var qd = new QueryDimension(colName)
@@ -309,9 +310,12 @@ class ResolveCarbonFunctions(relations: Seq[CarbonDecoderRelation])
             }
 
             // currently optimize sort only for order by 1 dimension
-            if (sortOrders.size == 1 && sortOrders.iterator.next() != null) {
-              sortOptimizeFlg = true
+            if (sortOrders.size < CarbonCommonConstants.CAN_OPTIMIZE_ORDER_BY_DIMENSIONS_MIN_NUMBER 
+                || sortOrders.size > CarbonCommonConstants.CAN_OPTIMIZE_ORDER_BY_DIMENSIONS_MAX_NUMBER ) {
+              sortOptimizeFlg = false
             }
+          } else {
+            sortOptimizeFlg = false
           }
 
           var sortNode: LogicalPlan = null

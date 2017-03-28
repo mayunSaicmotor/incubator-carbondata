@@ -75,7 +75,7 @@ public class DictionaryBasedSortResultCollector extends AbstractScannedResultCol
    * it will keep track of how many record is processed, to handle limit scenario
    */
   @Override public List<Object[]> collectSortData(AbstractScannedSortResult scannedResult, int batchSize,
-      String stopKey) {
+      byte[] stopKey) {
     queryDimensions = tableBlockExecutionInfos.getQueryDimensions();
     queryMeasures = tableBlockExecutionInfos.getQueryMeasures();
     initDimensionAndMeasureIndexesForFillingData();

@@ -22,6 +22,8 @@ package org.apache.carbondata.core.scan.result;
 import java.util.Comparator;
 
 import org.apache.carbondata.core.scan.model.SortOrderType;
+import org.apache.carbondata.core.util.ByteUtil;
+import org.apache.carbondata.core.util.ByteUtil.UnsafeComparer;
 
 /**
  * Result interface for storing the result
@@ -36,7 +38,7 @@ import org.apache.carbondata.core.scan.model.SortOrderType;
 		public ScanResultComparator(){
 			this.sortType = SortOrderType.ASC;
 		}
-		
+		UnsafeComparer resultComparator = ByteUtil.UnsafeComparer.INSTANCE;
 		@Override
 		public int compare(AbstractScannedSortResult o1, AbstractScannedSortResult o2) {
 			// TODO Auto-generated method stub
@@ -44,9 +46,10 @@ import org.apache.carbondata.core.scan.model.SortOrderType;
 			if(SortOrderType.ASC.equals(sortType)){
 				
 				
-			int result = o1.isSortByDictionaryDimensionFlg()
-					? Integer.parseInt(o1.currentSortDimentionKey) - Integer.parseInt(o2.currentSortDimentionKey)
-					: o1.currentSortDimentionKey.compareTo(o2.currentSortDimentionKey);
+//			int result = o1.isSortByDictionaryDimensionFlg()
+//					? Integer.parseInt(o1.currentSortDimentionKey) - Integer.parseInt(o2.currentSortDimentionKey)
+//					: o1.currentSortDimentionKey.compareTo(o2.currentSortDimentionKey);
+			int result = resultComparator.compareTo(o1.currentSortDimentionKey, o2.currentSortDimentionKey);
 			if (result == 0) {
 					//TODO whether carbon data file name is unique,  result = o1.getNodeNumber().compareTo(o2.getNodeNumber());
 					 return o1.getBlockletId().compareTo(o2.getBlockletId());
@@ -54,10 +57,10 @@ import org.apache.carbondata.core.scan.model.SortOrderType;
 				return result;
 			}else{
 				
-			int result = o1.isSortByDictionaryDimensionFlg()
-					? Integer.parseInt(o2.currentSortDimentionKey) - Integer.parseInt(o1.currentSortDimentionKey)
-					: o2.currentSortDimentionKey.compareTo(o1.currentSortDimentionKey);
-				
+//			int result = o1.isSortByDictionaryDimensionFlg()
+//					? Integer.parseInt(o2.currentSortDimentionKey) - Integer.parseInt(o1.currentSortDimentionKey)
+//					: o2.currentSortDimentionKey.compareTo(o1.currentSortDimentionKey);
+		        int result = resultComparator.compareTo(o2.currentSortDimentionKey, o1.currentSortDimentionKey);
 				if(result == 0){
 					return o2.getBlockletId().compareTo(o1.getBlockletId());
 				}

@@ -43,5 +43,5 @@ public interface ScannedResultCollector {
   void collectVectorBatch(AbstractScannedResult scannedResult, CarbonColumnarBatch columnarBatch);
   
   //For sort by dimention
-  List<Object[]> collectSortData(AbstractScannedSortResult scannedResult, int batchSize, String stopKey);
+  List<Object[]> collectSortData(AbstractScannedSortResult scannedResult, int batchSize, byte[] stopKey);
 }

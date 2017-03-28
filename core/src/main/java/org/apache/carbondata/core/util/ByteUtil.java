@@ -374,5 +374,25 @@ public final class ByteUtil {
     }
 
   }
+  
+  /**
+   * change int to byte[]
+   * 
+   * @param value
+   * @param size
+   * @return byte[]
+   */
+  public static byte[] transferIntToByteArray(int value, int size) {
+    byte[] targets = new byte[size];
+    for (int i = 0; i < size; i++) {
+      int data = value;
+      for (int j = i; j < size - 1; j++) {
+        data = data >> 8;
+      }
+      data = data & 0xFF;
+      targets[i] = (byte) (data & 0xFF);
+    }
+    return targets;
+  }
 
 }

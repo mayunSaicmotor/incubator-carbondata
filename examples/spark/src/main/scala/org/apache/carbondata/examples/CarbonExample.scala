@@ -32,14 +32,14 @@ object CarbonExample {
 
     cc.sql("DROP TABLE IF EXISTS t3")
 
-    cc.sql("""
-           CREATE TABLE IF NOT EXISTS t3
-           (ID Int, date Timestamp, country String,
-           name String, phonetype String, serialname String, salary Int
-           
-           )
-           STORED BY 'carbondata'
-           """)
+    cc.sql(""" 
+           CREATE TABLE IF NOT EXISTS t3 
+           (ID Int, date Timestamp, country String, 
+           name String, phonetype String, serialname String, salary Int, 
+           name1 String, name2 String, name3 String, name4 String, name5 String, name6 String,name7 String,name8 String 
+           ) 
+           STORED BY 'carbondata' 
+           """) 
 
     cc.sql(s"""
            LOAD DATA LOCAL INPATH '$testData' into table t3

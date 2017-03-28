@@ -301,7 +301,7 @@ public abstract class AbstractQueryExecutor<E> implements QueryExecutor<E> {
     if (queryModel.getSortDimensions() != null && queryModel.getSortDimensions().size() == 1) {
       sortIndexes = QueryUtil.getDimensionsBlockIndexes(queryModel.getSortDimensions(),
           segmentProperties.getDimensionOrdinalToBlockMapping());
-      if (sortIndexes.length == 1) {
+      if (sortIndexes.length == CarbonCommonConstants.CAN_OPTIMIZE_ORDER_BY_DIMENSIONS_MAX_NUMBER) {
         blockExecutionInfo.setSortFlg(true);
         blockExecutionInfo.setAllSortDimensionBlocksIndexes(sortIndexes);
       }

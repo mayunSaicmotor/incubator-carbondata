@@ -73,7 +73,7 @@ object CarbonExampleLimitQuery {
       var start = System.currentTimeMillis()
 
             cc.sql("""
-           SELECT name, date, serialname,country,salary FROM t3 ORDER BY serialname limit 100
+           SELECT name,name1,name2,name3,name4,name5,name6,name7,name8, date, serialname,country,salary FROM t3 ORDER BY date limit 1500
            """).show(1000000)
 
 
@@ -82,7 +82,7 @@ object CarbonExampleLimitQuery {
 
       start = System.currentTimeMillis()
     cc.sql("""
-           SELECT name, serialname, country, salary, id, date FROM t3 ORDER BY serialname limit 1000
+           SELECT name, serialname, country, salary, id, date FROM t3 ORDER BY country limit 2000
            """).show(1000000)
            
     end = System.currentTimeMillis() 
@@ -97,8 +97,13 @@ object CarbonExampleLimitQuery {
     end = System.currentTimeMillis() 
    print("query time: " + (end- start)) 
    
-
-      
+         start = System.currentTimeMillis()
+    cc.sql("""
+           SELECT name, serialname, country, salary, id, date FROM t3 ORDER BY serialname, country limit 10000
+           """).show(1000000)
+           
+    end = System.currentTimeMillis() 
+   print("query time: " + (end- start)) 
 
       /*         start = System.currentTimeMillis()
     cc.sql("""
