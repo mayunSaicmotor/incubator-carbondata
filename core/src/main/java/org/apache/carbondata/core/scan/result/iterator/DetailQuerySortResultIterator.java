@@ -52,284 +52,284 @@ import org.apache.carbondata.core.scan.result.ScanResultComparator;
  */
 public class DetailQuerySortResultIterator extends AbstractDetailQueryResultIterator {
 
-	private final Object lock = new Object();
-	Integer executeCnt =0;
-	private Future<BatchResult> future;
-	//private Integer limitKey = null;
-	private SortOrderType sortType = SortOrderType.ASC;
-	AbstractScannedSortResult currentScannedResult = null;
-	AbstractScannedSortResult nextScannedResult = null;
-	
-	protected boolean nextBatch = false;
-	
-	protected TreeSet<AbstractScannedSortResult> scannedResultSet;
-	
-	AbstractQueryBlockletFilter blockletFilter;
+  private final Object lock = new Object();
+  Integer executeCnt = 0;
+  private Future<BatchResult> future;
+  // private Integer limitKey = null;
+  private SortOrderType sortType = SortOrderType.ASC;
+  AbstractScannedSortResult currentScannedResult = null;
+  AbstractScannedSortResult nextScannedResult = null;
 
-	//protected List<Future<AbstractScannedSortResult>> scanResultfutureList = new ArrayList<Future<AbstractScannedSortResult>>();
-	//protected List<Future<AbstractSortScanResult>> nextScanResultfutureList = new ArrayList<Future<AbstractSortScanResult>>();
+  protected boolean nextBatch = false;
 
-	public DetailQuerySortResultIterator(List<BlockExecutionInfo> infos, QueryModel queryModel,
-			ExecutorService execService)  throws QueryExecutionException{
-		super(infos, queryModel, execService);
-		
-		// according to limit value to reduce the batch size
-		resetBatchSizeByLimit(queryModel.getLimit());
-		//TODO only consider the single dimension sort
-		QueryDimension singleSortDimesion = queryModel.getSortDimensions().get(0);
-		sortType = singleSortDimesion.getSortOrder();
-		scannedResultSet = new TreeSet<AbstractScannedSortResult>(new ScanResultComparator(sortType));
-		try{
-		  scanAndGenerateScannedResultSet(queryModel);
-		}catch (Exception e){
-		  e.printStackTrace();
-		  throw new QueryExecutionException("error: " + e.getMessage());
-		}
-		
+  protected TreeSet<AbstractScannedSortResult> scannedResultSet;
 
-		
-	}
-
-	private static final LogService LOGGER = LogServiceFactory
-			.getLogService(DetailQuerySortResultIterator.class.getName());
+  AbstractQueryBlockletFilter blockletFilter;
 
 
-	@Override
-	public BatchResult next() {
-		BatchResult result = null;
-		//klong startTime = System.currentTimeMillis();
-		try {
+  public DetailQuerySortResultIterator(List<BlockExecutionInfo> infos, QueryModel queryModel,
+      ExecutorService execService) throws QueryExecutionException {
+    super(infos, queryModel, execService);
 
-			if (future == null) {
-				//this.printTreeSet();
-				future = execute();
-			}
-			result = future.get();
-			nextBatch = false;
-			if (hasNext()) {
-				nextBatch = true;
-				future = execute();
-			} else {
-				fileReader.finish();
-			}
-			//totalScanTime += System.currentTimeMillis() - startTime;
-        } catch (Exception ex) {
-          try {
-            fileReader.finish();
-          } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-          }
-          throw new RuntimeException(ex);
-        }
+    // according to limit value to reduce the batch size
+    resetBatchSizeByLimit(queryModel.getLimit());
+    // TODO only consider the single dimension sort
+    QueryDimension singleSortDimesion = queryModel.getSortDimensions().get(0);
+    sortType = singleSortDimesion.getSortOrder();
+    scannedResultSet = new TreeSet<AbstractScannedSortResult>(new ScanResultComparator(sortType));
+    try {
+      scanAndGenerateScannedResultSet(queryModel);
+    } catch (Exception e) {
+      LOGGER.error(e);
+      throw new QueryExecutionException("error: " + e.getMessage());
+    }
 
-		return result;
-	}
+  }
 
-	@Override
-	public boolean hasNext() {
+  private static final LogService LOGGER = LogServiceFactory
+      .getLogService(DetailQuerySortResultIterator.class.getName());
 
-		//return true;
-		//return hasNextFlg;
-		
-		if(nextBatch){
-			return true;
-		}
-		boolean nextFlg = false;
-		if(limitFlg){
-			
-			nextFlg = limit > 0 
-					&& (scannedResultSet.size() > 0 
-							|| (currentScannedResult != null 
-								&& currentScannedResult.hasNextForSort()));
-		}else {
-			
-			nextFlg = scannedResultSet.size() > 0
-					|| (this.currentScannedResult != null 
-						&& this.currentScannedResult.hasNextForSort());
-		}
-		//boolean nextFlg = (limit > 0  && (scannedResultSet.size() > 0 || this.currentScannedResult.hasNextForSort() ) ) || nextBatch;
-		//LOGGER.info("hasNext: "+nextFlg);
-		//TODO
-//		if(	!nextFlg){
-//			
-//			LOGGER.info("currentScannedResult getCurrentSortDimentionKey: "+currentScannedResult.getCurrentSortDimentionKey());
-//		}
-		return nextFlg;
-	}
+  @Override
+  public BatchResult next() {
+    BatchResult result = null;
+    // klong startTime = System.currentTimeMillis();
+    try {
 
-	/**
-	 * It scans the block and returns the result with @batchSize
-	 *
-	 * @return Result of @batchSize
-	 */
-	public Future<BatchResult> execute() {
+      if (future == null) {
+        // this.printTreeSet();
+        future = execute();
+      }
+      result = future.get();
+      nextBatch = false;
+      if (hasNext()) {
+        nextBatch = true;
+        future = execute();
+      } else {
+        fileReader.finish();
+      }
+      // totalScanTime += System.currentTimeMillis() - startTime;
+    } catch (Exception ex) {
+      try {
+        fileReader.finish();
+      } catch (IOException e) {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+      }
+      throw new RuntimeException(ex);
+    }
 
-		return execService.submit(new Callable<BatchResult>() {
-			@Override
-			public BatchResult call() throws QueryExecutionException, IOException {
+    return result;
+  }
 
-				BatchResult batchResult = new BatchResult();
+  @Override
+  public boolean hasNext() {
 
-				List<Object[]> collectedResult = null;
-				//long start =System.currentTimeMillis();
-				//int tmpCount = 0;
-				//boolean tmpflg =updateScanner();
-				//LOGGER.info("updateScanner: "+tmpflg);
-				if (updateScanner()) {
-					
-					collectedResult = currentScannedResult.collectSortedData(batchSize, nextScannedResult !=null?nextScannedResult.getCurrentSortDimentionKey():null);
+    if (nextBatch) {
+      return true;
+    }
+    boolean nextFlg = false;
+    if (limitFlg) {
 
-					decreaseLimit(collectedResult.size());	
-					
-					//long end =System.currentTimeMillis();
-					//LOGGER.info("collectSortedData"+(++tmpCount) +": " +(end -start));
-					
-					//tmpflg =updateScanner();
-					//LOGGER.info("updateScanner: "+tmpflg);
-					while (collectedResult.size() < batchSize && limit>0 && updateScanner()) {
-						
-						  //start =System.currentTimeMillis();
-						//List<Object[]> data = currentScannedResult.collectSortedData( batchSize - collectedResult.size(), nextScannedResult !=null?nextScannedResult.getCurrentSortDimentionKey():null);
-						//currentScannedResult.loadOtherColunmsData();
-						int leftSize = batchSize - collectedResult.size();
-						if(limitFlg &&(limit < leftSize)){
-							leftSize = limit;
-						}
-						List<Object[]> data = currentScannedResult.collectSortedData( leftSize, nextScannedResult !=null?nextScannedResult.getCurrentSortDimentionKey():null);
-						collectedResult.addAll(data);
+      nextFlg = limit > 0 && (scannedResultSet.size() > 0
+          || (currentScannedResult != null && currentScannedResult.hasNextForSort()));
+    } else {
 
-						decreaseLimit(data.size());
-						//printCount(collectedResult);
-						
-						///tmpflg =updateScanner();
-						//LOGGER.info("updateScanner: "+tmpflg);
-						 //end =System.currentTimeMillis();
-						//LOGGER.info("collectSortedData "+(++tmpCount) +": " +(end -start));
-					}
-					
+      nextFlg = scannedResultSet.size() > 0
+          || (this.currentScannedResult != null && this.currentScannedResult.hasNextForSort());
+    }
 
-				} else {
-					collectedResult = new ArrayList<>();
-					
-				}
-				batchResult.setRows(collectedResult);
-				//if(collectedResult!=null){
-					//LOGGER.info("collectedResult start: " + collectedResult.get(0)[0]);
-					//LOGGER.info("collectedResult end: " + collectedResult.get(collectedResult.size()-1)[0]);
-				//}
-				//LOGGER.info("collectedResult.size(): "+collectedResult.size());
-				return batchResult;
+    return nextFlg;
+  }
 
-			}
+  /**
+   * It scans the block and returns the result with @batchSize
+   *
+   * @return Result of @batchSize
+   */
+  public Future<BatchResult> execute() {
 
-			public void printCount(List<Object[]> collectedResult) {
-				synchronized (executeCnt){
-					LOGGER.info("executeCnt:"+  ++executeCnt);
-					//limit = limit -collectedResult.size();
-					LOGGER.info("limit left:"+  limit);
-					LOGGER.info("collectedResult.size:"+  collectedResult.size());
-				}
-			}
-		});
-	}
+    return execService.submit(new Callable<BatchResult>() {
+      @Override
+      public BatchResult call() throws QueryExecutionException, IOException {
 
-	protected boolean updateScanner() {
-		
-		//printTreeSet();
-//   		if(currentScannedResult != null && "name999887".equals(currentScannedResult.getCurrentSortDimentionKey())){
-//   	   		if( "name999887".equals(currentScannedResult.getCurrentSortDimentionKey())){
-//   	   			LOGGER.info("collectedResult.size:");
-//   	   		}
-//
-//		}
+        BatchResult batchResult = new BatchResult();
 
-		if (currentScannedResult != null) {
-			if(currentScannedResult.hasNextForSort()){
-				
-				//scannedResultSet.remove(currentScannedResult);				
-				//printTreeSet();
-				if(! currentScannedResult.isCurrentSortDimentionKeyChgFlg()){
-				
-					return true;
-				}
-				scannedResultSet.add(currentScannedResult);				
-				//printTreeSet();
-			}else{
-				
-				scannedResultSet.remove(currentScannedResult);
-/*				if(scannedResultSet.size()<=0){
-					//hasNextFlg = false;
-					return false;
-				}*/
-			}
-		}
-	
-		if(scannedResultSet.size()>0){
-			currentScannedResult = scannedResultSet.first();
-			//printTreeSet();
-//	   		if(currentScannedResult != null && "name999887".equals(currentScannedResult.getCurrentSortDimentionKey())){
-//	   	   		if( "name999887".equals(currentScannedResult.getCurrentSortDimentionKey())){
-//	   	   			LOGGER.info("collectedResult.size:");
-//	   	   		}
-//
-//			}
-	   		
-			scannedResultSet.remove(currentScannedResult);
-			if(scannedResultSet.size()>0){
-				nextScannedResult = scannedResultSet.first();
-			} else {
-				nextScannedResult = null;
-			}
-		}else{
-			//hasNextFlg = false;
-			return false;
-		}
-		
+        List<Object[]> collectedResult = null;
+        // long start =System.currentTimeMillis();
+        // int tmpCount = 0;
+        // boolean tmpflg =updateScanner();
+        // LOGGER.info("updateScanner: "+tmpflg);
+        if (updateScanner()) {
 
-		return true;
-	}
+          collectedResult = currentScannedResult.collectSortedData(batchSize,
+              nextScannedResult != null ? nextScannedResult.getCurrentSortDimentionKey() : null);
 
-	private void printTreeSet() {
-		LOGGER.info("start print");
-		for(AbstractScannedSortResult detailedScannedResult : this.scannedResultSet){
-			
-			LOGGER.info("CurrentSortDimentionKey in scannedResultSet: " + detailedScannedResult.getCurrentSortDimentionKey());	
-		}
-		LOGGER.info("end print");
-	}
+          decreaseLimit(collectedResult.size());
 
+          // long end =System.currentTimeMillis();
+          // LOGGER.info("collectSortedData"+(++tmpCount) +": " +(end -start));
 
+          // tmpflg =updateScanner();
+          // LOGGER.info("updateScanner: "+tmpflg);
+          while (collectedResult.size() < batchSize && limit > 0 && updateScanner()) {
 
-	private void scanAndGenerateScannedResultSet(QueryModel queryModel)  throws QueryExecutionException, IOException, InterruptedException, ExecutionException, FilterUnsupportedException{
-
-		//LOGGER.info("blockExecutionInfos: "+ blockExecutionInfos.get(0).getNumberOfBlockToScan());
-		LimitFilteredBlocksChunkHolders limitFilteredBlocksChunkHolders = new LimitFilteredBlocksChunkHolders(queryModel.getLimit(),
-				((BlockExecutionInfo)blockExecutionInfos.get(0)).getAllSortDimensionBlocksIndexes()[0],
-				queryModel.getSortDimensions().get(0).getSortOrder());
-		for (BlockExecutionInfo executionInfo : (List<BlockExecutionInfo>)blockExecutionInfos) {
-
-			queryStatisticsModel.setRecorder(recorder);
-            
-            if (executionInfo.getFilterExecuterTree() != null) {
-              blockletFilter = new FilterQueryBlockletFilter(executionInfo, fileReader,
-                  queryStatisticsModel, execService, sortType);
-            } else {
-              blockletFilter = new NoFilterQueryBlockletFilter(executionInfo, fileReader,
-                  queryStatisticsModel, execService, sortType);
+            // start =System.currentTimeMillis();
+            // List<Object[]> data = currentScannedResult.collectSortedData(
+            // batchSize - collectedResult.size(), nextScannedResult
+            // !=null?nextScannedResult.getCurrentSortDimentionKey():null);
+            // currentScannedResult.loadOtherColunmsData();
+            int leftSize = batchSize - collectedResult.size();
+            if (limitFlg && (limit < leftSize)) {
+              leftSize = limit;
             }
-            // long start = System.currentTimeMillis();
-			blockletFilter.filterDataBlocklets(executionInfo, fileReader, queryStatisticsModel, queryModel, limitFilteredBlocksChunkHolders);
-			// System.out.println("filterDataBlocklets: "+(System.currentTimeMillis() -start));
-		}
-		//blockExecutionInfos = null;
-		
-		// long start = System.currentTimeMillis();
-		//LOGGER.info("blocksChunkHolderLimitFilter size: "+blocksChunkHolderLimitFilter.getRequiredToScanBlocksChunkHolderSet().size());
+            List<Object[]> data = currentScannedResult.collectSortedData(leftSize,
+                nextScannedResult != null ? nextScannedResult.getCurrentSortDimentionKey() : null);
+            collectedResult.addAll(data);
 
-		scannedResultSet = generateAllScannedResultSet(execService, limitFilteredBlocksChunkHolders, sortType);
-		// System.out.println("generateAllScannedResultSet: "+(System.currentTimeMillis() -start));
-	}
+            decreaseLimit(data.size());
+            // printCount(collectedResult);
+
+            /// tmpflg =updateScanner();
+            // LOGGER.info("updateScanner: "+tmpflg);
+            // end =System.currentTimeMillis();
+            // LOGGER.info("collectSortedData "+(++tmpCount) +": " +(end
+            /// -start));
+          }
+
+        } else {
+          collectedResult = new ArrayList<>();
+
+        }
+        batchResult.setRows(collectedResult);
+        // if(collectedResult!=null){
+        // LOGGER.info("collectedResult start: " + collectedResult.get(0)[0]);
+        // LOGGER.info("collectedResult end: " +
+        // collectedResult.get(collectedResult.size()-1)[0]);
+        // }
+        // LOGGER.info("collectedResult.size(): "+collectedResult.size());
+        return batchResult;
+
+      }
+
+      public void printCount(List<Object[]> collectedResult) {
+        synchronized (executeCnt) {
+          LOGGER.info("executeCnt:" + ++executeCnt);
+          // limit = limit -collectedResult.size();
+          LOGGER.info("limit left:" + limit);
+          LOGGER.info("collectedResult.size:" + collectedResult.size());
+        }
+      }
+    });
+  }
+
+  protected boolean updateScanner() {
+
+    // printTreeSet();
+    // if(currentScannedResult != null &&
+    // "name999887".equals(currentScannedResult.getCurrentSortDimentionKey())){
+    // if(
+    // "name999887".equals(currentScannedResult.getCurrentSortDimentionKey())){
+    // LOGGER.info("collectedResult.size:");
+    // }
+    //
+    // }
+
+    if (currentScannedResult != null) {
+      if (currentScannedResult.hasNextForSort()) {
+
+        // scannedResultSet.remove(currentScannedResult);
+        // printTreeSet();
+        if (!currentScannedResult.isCurrentSortDimentionKeyChgFlg()) {
+
+          return true;
+        }
+        scannedResultSet.add(currentScannedResult);
+        // printTreeSet();
+      } else {
+
+        scannedResultSet.remove(currentScannedResult);
+        currentScannedResult.freeMemory();
+        
+        /*
+         * if(scannedResultSet.size()<=0){ //hasNextFlg = false; return false; }
+         */
+      }
+    }
+
+    if (scannedResultSet.size() > 0) {
+      currentScannedResult = scannedResultSet.first();
+      // printTreeSet();
+      // if(currentScannedResult != null &&
+      // "name999887".equals(currentScannedResult.getCurrentSortDimentionKey())){
+      // if(
+      // "name999887".equals(currentScannedResult.getCurrentSortDimentionKey())){
+      // LOGGER.info("collectedResult.size:");
+      // }
+      //
+      // }
+
+      scannedResultSet.remove(currentScannedResult);
+      if (scannedResultSet.size() > 0) {
+        nextScannedResult = scannedResultSet.first();
+      } else {
+        nextScannedResult = null;
+      }
+    } else {
+      // hasNextFlg = false;
+      return false;
+    }
+
+    return true;
+  }
+
+  private void printTreeSet() {
+    LOGGER.info("start print");
+    for (AbstractScannedSortResult detailedScannedResult : this.scannedResultSet) {
+
+      LOGGER.info("CurrentSortDimentionKey in scannedResultSet: "
+          + detailedScannedResult.getCurrentSortDimentionKey());
+    }
+    LOGGER.info("end print");
+  }
+
+  private void scanAndGenerateScannedResultSet(QueryModel queryModel)
+      throws QueryExecutionException, IOException, InterruptedException, ExecutionException,
+      FilterUnsupportedException {
+
+    // LOGGER.info("blockExecutionInfos: "+
+    // blockExecutionInfos.get(0).getNumberOfBlockToScan());
+    LimitFilteredBlocksChunkHolders limitFilteredBlocksChunkHolders = new LimitFilteredBlocksChunkHolders(
+        queryModel.getLimit(),
+        ((BlockExecutionInfo) blockExecutionInfos.get(0)).getAllSortDimensionBlocksIndexes()[0],
+        queryModel.getSortDimensions().get(0).getSortOrder());
+    for (BlockExecutionInfo executionInfo : (List<BlockExecutionInfo>) blockExecutionInfos) {
+
+      queryStatisticsModel.setRecorder(recorder);
+
+      if (executionInfo.getFilterExecuterTree() != null) {
+        blockletFilter = new FilterQueryBlockletFilter(executionInfo, fileReader,
+            queryStatisticsModel, execService, sortType);
+      } else {
+        blockletFilter = new NoFilterQueryBlockletFilter(executionInfo, fileReader,
+            queryStatisticsModel, execService, sortType);
+      }
+      // long start = System.currentTimeMillis();
+      blockletFilter.filterDataBlocklets(executionInfo, fileReader, queryStatisticsModel,
+          queryModel, limitFilteredBlocksChunkHolders);
+      // System.out.println("filterDataBlocklets: "+(System.currentTimeMillis()
+      // -start));
+    }
+    // blockExecutionInfos = null;
+
+    // long start = System.currentTimeMillis();
+    // LOGGER.info("blocksChunkHolderLimitFilter size:
+    // "+blocksChunkHolderLimitFilter.getRequiredToScanBlocksChunkHolderSet().size());
+
+    scannedResultSet = generateAllScannedResultSet(execService, limitFilteredBlocksChunkHolders,
+        sortType);
+    // System.out.println("generateAllScannedResultSet:
+    // "+(System.currentTimeMillis() -start));
+  }
 
   // only load the sort dim data ,others will be lazy loaded
   public TreeSet<AbstractScannedSortResult> generateAllScannedResultSet(ExecutorService execService,
@@ -361,7 +361,7 @@ public class DetailQuerySortResultIterator extends AbstractDetailQueryResultIter
         // LOGGER.info("detailedScannedResult.getCurrentSortDimentionKey()"
         // + detailedScannedResult.getCurrentSortDimentionKey());
         if (detailedScannedResults != null) {
-          for(AbstractScannedSortResult result : detailedScannedResults){
+          for (AbstractScannedSortResult result : detailedScannedResults) {
             scannedResultSet.add(result);
           }
           // printTreeSet(scannedResultSet);
@@ -378,6 +378,21 @@ public class DetailQuerySortResultIterator extends AbstractDetailQueryResultIter
     return scannedResultSet;
   }
 
-
-
+  @Override public void close() {
+    if(currentScannedResult != null){
+      if(this.scannedResultSet.size() > 0){
+        scannedResultSet.remove(currentScannedResult);
+        currentScannedResult.freeMemory();
+      }
+    }
+    for(AbstractScannedSortResult scanResult : scannedResultSet){
+      scanResult.freeMemory();
+    }
+    try {
+      fileReader.finish();
+    } catch (IOException e) {
+      LOGGER.error(e);
+    }
+  }
+  
 }

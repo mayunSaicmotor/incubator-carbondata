@@ -31,6 +31,7 @@ import org.apache.carbondata.core.datastore.impl.FileFactory;
 import org.apache.carbondata.core.datastore.impl.btree.BTreeDataRefNodeFinder;
 import org.apache.carbondata.core.scan.executor.infos.BlockExecutionInfo;
 import org.apache.carbondata.core.scan.model.QueryModel;
+import org.apache.carbondata.core.scan.model.SortOrderType;
 import org.apache.carbondata.core.scan.processor.AbstractDataBlockIterator;
 import org.apache.carbondata.core.scan.processor.impl.DataBlockIteratorImpl;
 import org.apache.carbondata.core.scan.result.vector.CarbonColumnarBatch;
@@ -66,6 +67,7 @@ public abstract class AbstractDetailQueryResultIterator<E> extends CarbonIterato
 
   protected AbstractDataBlockIterator dataBlockIterator;
 
+  protected QueryModel queryModel;
   /**
    * QueryStatisticsRecorder
    */
@@ -87,6 +89,10 @@ public abstract class AbstractDetailQueryResultIterator<E> extends CarbonIterato
       // LOGGER.info("limit before: " + limit);
       // LOGGER.info("count: " + count);
       limit = limit - count;
+      if(dataBlockIterator != null){
+        dataBlockIterator.updateBatchSize(limit);
+      }
+
       // LOGGER.info("limit after: " + limit);
     }
 
@@ -115,7 +121,7 @@ public abstract class AbstractDetailQueryResultIterator<E> extends CarbonIterato
     
     //this.blocksChunkHolder = new BlocksChunkHolder(infos.get(0).getTotalNumberDimensionBlock(),
     //    infos.get(0).getTotalNumberOfMeasureBlock());
-
+    this.queryModel = queryModel;
     this.recorder = queryModel.getStatisticsRecorder();
     this.blockExecutionInfos = infos;
     this.fileReader = FileFactory.getFileHolder(
@@ -138,7 +144,7 @@ public abstract class AbstractDetailQueryResultIterator<E> extends CarbonIterato
     }
   }
 
-  private void intialiseInfos() {
+  protected void intialiseInfos() {
     for (BlockExecutionInfo blockInfo : blockExecutionInfos) {
       DataRefNodeFinder finder = new BTreeDataRefNodeFinder(blockInfo.getEachColumnValueSize());
       DataRefNode startDataBlock = finder
@@ -184,10 +190,14 @@ public abstract class AbstractDetailQueryResultIterator<E> extends CarbonIterato
       BlockExecutionInfo executionInfo = blockExecutionInfos.get(0);
       blockExecutionInfos.remove(executionInfo);
       queryStatisticsModel.setRecorder(recorder);
-      return new DataBlockIteratorImpl(executionInfo, fileReader, batchSize, queryStatisticsModel,
-          execService);
+      return getDataBlockIterator(executionInfo);
     }
     return null;
+  }
+
+  protected DataBlockIteratorImpl getDataBlockIterator(BlockExecutionInfo executionInfo) {
+    return new DataBlockIteratorImpl(executionInfo, fileReader, batchSize, queryStatisticsModel,
+        execService, null);
   }
 
   protected void initQueryStatiticsModel() {

@@ -173,8 +173,8 @@ public final class CarbonProperties {
         .getProperty(CarbonV3DataFormatConstants.NUMBER_OF_ROWS_PER_BLOCKLET_COLUMN_PAGE,
             CarbonV3DataFormatConstants.NUMBER_OF_ROWS_PER_BLOCKLET_COLUMN_PAGE_DEFAULT);
     try {
-      int numberOfRowsPerBlockletColumnPage =
-          Integer.parseInt(numberOfRowsPerBlockletColumnPageString);
+      short numberOfRowsPerBlockletColumnPage =
+          Short.parseShort(numberOfRowsPerBlockletColumnPageString);
       if (numberOfRowsPerBlockletColumnPage
           < CarbonV3DataFormatConstants.NUMBER_OF_ROWS_PER_BLOCKLET_COLUMN_PAGE_MIN
           || numberOfRowsPerBlockletColumnPage

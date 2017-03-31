@@ -1191,11 +1191,10 @@ public final class CarbonCommonConstants {
 
   public static final String CARBON_BAD_RECORDS_ACTION_DEFAULT = "FORCE";
 
-  public static final int MAX_SIZE_FOR_GET_MAXINT_FROM_ARRAY = 5000;
   public static final byte[] MAX_STR = "~".getBytes();
   public static final byte[] MIN_STR = "".getBytes();
   public static final boolean SNAPPY_UNCOMRESS_NO_LIMIT_FLG = true;
-  public static final int CAN_OPTIMIZE_ORDER_BY_DIMENSIONS_MAX_NUMBER = 1;
+  public static final int CAN_OPTIMIZE_ORDER_BY_DIMENSIONS_MAX_NUMBER = 5;
   public static final int CAN_OPTIMIZE_ORDER_BY_DIMENSIONS_MIN_NUMBER = 1;
   private CarbonCommonConstants() {
   }

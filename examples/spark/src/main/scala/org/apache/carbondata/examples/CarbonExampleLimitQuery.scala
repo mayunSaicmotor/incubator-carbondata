@@ -70,19 +70,36 @@ object CarbonExampleLimitQuery {
     for (index <- 1 to 1) {
 
 
+          cc.sql("""
+           SELECT name, serialname, country, salary, id, date FROM t3 ORDER BY country limit 1000
+           """).show(1000000)
+           
+           
       var start = System.currentTimeMillis()
 
+           
             cc.sql("""
-           SELECT name,name1,name2,name3,name4,name5,name6,name7,name8, date, serialname,country,salary FROM t3 ORDER BY date limit 1500
+           SELECT date,country,name,serialname,salary,name1,name2,name3,name4,name5,name6,name7,name8 FROM t3 ORDER BY date,country,name limit 40000
            """).show(1000000)
 
 
       var end = System.currentTimeMillis()
       print("query time: " + (end - start))
+      
+            start = System.currentTimeMillis()
+            
+//                        cc.sql("""
+//           SELECT date,country,name,serialname,salary,name1,name2,name3,name4,name5,name6,name7,name8 FROM t3 ORDER BY date desc,country desc,name desc limit 50000
+//           """).show(1000000)
+
+           
+    end = System.currentTimeMillis() 
+   print("query time: " + (end- start)) 
+   
 
       start = System.currentTimeMillis()
     cc.sql("""
-           SELECT name, serialname, country, salary, id, date FROM t3 ORDER BY country limit 2000
+           SELECT name, serialname, country, salary, id, date FROM t3 ORDER BY country limit 1000
            """).show(1000000)
            
     end = System.currentTimeMillis() 
@@ -97,7 +114,15 @@ object CarbonExampleLimitQuery {
     end = System.currentTimeMillis() 
    print("query time: " + (end- start)) 
    
-         start = System.currentTimeMillis()
+            start = System.currentTimeMillis()
+    cc.sql("""
+           SELECT name, serialname, country, salary, id, date FROM t3 ORDER BY serialname limit 50000
+           """).show(1000000)
+           
+    end = System.currentTimeMillis() 
+   print("query time: " + (end- start)) 
+   
+/*         start = System.currentTimeMillis()
     cc.sql("""
            SELECT name, serialname, country, salary, id, date FROM t3 ORDER BY serialname, country limit 10000
            """).show(1000000)
@@ -105,7 +130,7 @@ object CarbonExampleLimitQuery {
     end = System.currentTimeMillis() 
    print("query time: " + (end- start)) 
 
-      /*         start = System.currentTimeMillis()
+               start = System.currentTimeMillis()
     cc.sql("""
            SELECT name, serialname, country, salary, id, date FROM t3 ORDER BY name desc limit 500
            """).show(1000000)

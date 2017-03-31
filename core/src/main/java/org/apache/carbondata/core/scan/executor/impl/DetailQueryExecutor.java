@@ -25,6 +25,7 @@ import org.apache.carbondata.core.scan.executor.infos.BlockExecutionInfo;
 import org.apache.carbondata.core.scan.model.QueryModel;
 import org.apache.carbondata.core.scan.result.BatchResult;
 import org.apache.carbondata.core.scan.result.iterator.DetailQueryResultIterator;
+import org.apache.carbondata.core.scan.result.iterator.DetailQuerySortByMdkResultIterator;
 import org.apache.carbondata.core.scan.result.iterator.DetailQuerySortResultIterator;
 
 /**
@@ -41,6 +42,13 @@ public class DetailQueryExecutor extends AbstractQueryExecutor<BatchResult> {
     //TODO for sort, if blockExecutionInfoList.size >1, it can't make sure the data's order in 2 block
     if (blockExecutionInfoList.get(0).isSortFlg()) {
       if(blockExecutionInfoList.size() == 1){
+        if(blockExecutionInfoList.get(0).isOrderByPrefixMdkFlg()){
+          return new DetailQuerySortByMdkResultIterator(
+              blockExecutionInfoList,
+              queryModel,
+              queryProperties.executorService
+          );
+        }
         return new DetailQuerySortResultIterator(blockExecutionInfoList, queryModel,
             queryProperties.executorService);
       }else{

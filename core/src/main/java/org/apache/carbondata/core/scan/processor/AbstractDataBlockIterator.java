@@ -32,6 +32,7 @@ import org.apache.carbondata.core.datastore.FileHolder;
 import org.apache.carbondata.core.scan.collector.ResultCollectorFactory;
 import org.apache.carbondata.core.scan.collector.ScannedResultCollector;
 import org.apache.carbondata.core.scan.executor.infos.BlockExecutionInfo;
+import org.apache.carbondata.core.scan.model.SortOrderType;
 import org.apache.carbondata.core.scan.result.AbstractScannedResult;
 import org.apache.carbondata.core.scan.result.vector.CarbonColumnarBatch;
 import org.apache.carbondata.core.scan.scanner.BlockletScanner;
@@ -47,6 +48,8 @@ public abstract class AbstractDataBlockIterator extends CarbonIterator<List<Obje
 
   private static final LogService LOGGER =
       LogServiceFactory.getLogService(AbstractDataBlockIterator.class.getName());
+  
+  protected SortOrderType sortType;
 
   /**
    * iterator which will be used to iterate over data blocks
@@ -79,29 +82,39 @@ public abstract class AbstractDataBlockIterator extends CarbonIterator<List<Obje
 
   private BlockExecutionInfo blockExecutionInfo;
 
-  private FileHolder fileReader;
+  protected FileHolder fileReader;
 
   private AtomicBoolean nextBlock;
 
   private AtomicBoolean nextRead;
 
   public AbstractDataBlockIterator(BlockExecutionInfo blockExecutionInfo, FileHolder fileReader,
-      int batchSize, QueryStatisticsModel queryStatisticsModel, ExecutorService executorService) {
+      int batchSize, QueryStatisticsModel queryStatisticsModel, ExecutorService executorService, SortOrderType sortType) {
+    this.sortType = sortType;
     this.blockExecutionInfo = blockExecutionInfo;
     this.fileReader = fileReader;
-    dataBlockIterator = new BlockletIterator(blockExecutionInfo.getFirstDataBlock(),
-        blockExecutionInfo.getNumberOfBlockToScan());
-    if (blockExecutionInfo.getFilterExecuterTree() != null) {
-      blockletScanner = new FilterScanner(blockExecutionInfo, queryStatisticsModel);
-    } else {
-      blockletScanner = new NonFilterScanner(blockExecutionInfo, queryStatisticsModel);
-    }
+    getBlockIterator(blockExecutionInfo);
+    getBlockletScanner(blockExecutionInfo, queryStatisticsModel);
     this.scannerResultAggregator =
         ResultCollectorFactory.getScannedResultCollector(blockExecutionInfo);
     this.batchSize = batchSize;
     this.executorService = executorService;
     this.nextBlock = new AtomicBoolean(false);
     this.nextRead = new AtomicBoolean(false);
+  }
+
+  protected void getBlockIterator(BlockExecutionInfo blockExecutionInfo) {
+    dataBlockIterator = new BlockletIterator(blockExecutionInfo.getFirstDataBlock(),
+        blockExecutionInfo.getNumberOfBlockToScan());
+  }
+
+  protected void getBlockletScanner(BlockExecutionInfo blockExecutionInfo,
+      QueryStatisticsModel queryStatisticsModel) {
+    if (blockExecutionInfo.getFilterExecuterTree() != null) {
+      blockletScanner = new FilterScanner(blockExecutionInfo, queryStatisticsModel);
+    } else {
+      blockletScanner = new NonFilterScanner(blockExecutionInfo, queryStatisticsModel);
+    }
   }
 
   public boolean hasNext() {
@@ -228,6 +241,11 @@ public abstract class AbstractDataBlockIterator extends CarbonIterator<List<Obje
       } catch (InterruptedException | ExecutionException e) {
         throw new RuntimeException(e);
       }
+    }
+  }
+  public void updateBatchSize(int limit) {
+    if(limit < this.batchSize ){
+      this.batchSize = limit;
     }
   }
 }

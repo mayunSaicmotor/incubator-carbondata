@@ -290,6 +290,7 @@ class ResolveCarbonFunctions(relations: Seq[CarbonDecoderRelation])
               }
             }
 
+            var orderByPrefixMdkCnt:Int = 1;
             sortOrders = sort.order.map {
               x =>
                 var sortColRef = x.child.references
@@ -302,6 +303,9 @@ class ResolveCarbonFunctions(relations: Seq[CarbonDecoderRelation])
                   sortOptimizeFlg = false
                   null
                 } else {
+                  if (carbonDimension.getSchemaOrdinal == orderByPrefixMdkCnt) {
+                    orderByPrefixMdkCnt = orderByPrefixMdkCnt + 1
+                  }
                   var qd = new QueryDimension(colName)
                   qd.setSortOrder(getCarbonSortDirection(x.direction))
                   qd.setDimension(carbonDimension)
@@ -310,8 +314,8 @@ class ResolveCarbonFunctions(relations: Seq[CarbonDecoderRelation])
             }
 
             // currently optimize sort only for order by 1 dimension
-            if (sortOrders.size < CarbonCommonConstants.CAN_OPTIMIZE_ORDER_BY_DIMENSIONS_MIN_NUMBER 
-                || sortOrders.size > CarbonCommonConstants.CAN_OPTIMIZE_ORDER_BY_DIMENSIONS_MAX_NUMBER ) {
+            if ((sortOrders.size < CarbonCommonConstants.CAN_OPTIMIZE_ORDER_BY_DIMENSIONS_MIN_NUMBER 
+                && sortOrders.size > CarbonCommonConstants.CAN_OPTIMIZE_ORDER_BY_DIMENSIONS_MAX_NUMBER) || orderByPrefixMdkCnt < sortOrders.size) {
               sortOptimizeFlg = false
             }
           } else {

@@ -57,13 +57,13 @@ import org.apache.carbondata.core.scan.filter.FilterUtil;
 import org.apache.carbondata.core.scan.model.QueryDimension;
 import org.apache.carbondata.core.scan.model.QueryMeasure;
 import org.apache.carbondata.core.scan.model.QueryModel;
+import org.apache.carbondata.core.scan.model.SortOrderType;
 import org.apache.carbondata.core.stats.QueryStatistic;
 import org.apache.carbondata.core.stats.QueryStatisticsConstants;
 import org.apache.carbondata.core.util.CarbonProperties;
 import org.apache.carbondata.core.util.CarbonTimeStatisticsFactory;
 import org.apache.carbondata.core.util.CarbonUtil;
 import org.apache.carbondata.core.util.path.CarbonStorePath;
-
 import org.apache.commons.lang3.ArrayUtils;
 
 /**
@@ -298,18 +298,27 @@ public abstract class AbstractQueryExecutor<E> implements QueryExecutor<E> {
 
     // TODO setting all sorted dimension
     int[] sortIndexes = null;
-    if (queryModel.getSortDimensions() != null && queryModel.getSortDimensions().size() == 1) {
-      sortIndexes = QueryUtil.getDimensionsBlockIndexes(queryModel.getSortDimensions(),
+    List<QueryDimension> sortDimensions = queryModel.getSortDimensions();
+    if (sortDimensions != null && sortDimensions.size() > 0) {
+      sortIndexes = QueryUtil.getDimensionsBlockIndexes(sortDimensions,
           segmentProperties.getDimensionOrdinalToBlockMapping());
-      if (sortIndexes.length == CarbonCommonConstants.CAN_OPTIMIZE_ORDER_BY_DIMENSIONS_MAX_NUMBER) {
+      if (sortIndexes.length >= CarbonCommonConstants.CAN_OPTIMIZE_ORDER_BY_DIMENSIONS_MIN_NUMBER && sortIndexes.length <= CarbonCommonConstants.CAN_OPTIMIZE_ORDER_BY_DIMENSIONS_MAX_NUMBER) {
         blockExecutionInfo.setSortFlg(true);
         blockExecutionInfo.setAllSortDimensionBlocksIndexes(sortIndexes);
+      }
+      blockExecutionInfo.setOrderByPrefixMdkFlg(true);
+      SortOrderType orderType = sortDimensions.get(0).getSortOrder();
+      for (int i = 0; i < sortIndexes.length; i++) {
+        if(i != sortIndexes[i] || !orderType.equals(sortDimensions.get(i).getSortOrder())){
+          blockExecutionInfo.setOrderByPrefixMdkFlg(false);
+          break;
+        }
       }
     }
 
     int[] dimensionsBlockIndexes = QueryUtil.getDimensionsBlockIndexes(currentBlockQueryDimensions,
         segmentProperties.getDimensionOrdinalToBlockMapping(), expressionDimensions,
-        currentBlockFilterDimensions, allProjectionListDimensionIdexes, sortIndexes, blockExecutionInfo.isSortFlg());
+        currentBlockFilterDimensions, allProjectionListDimensionIdexes, sortIndexes, blockExecutionInfo);
     int numberOfColumnToBeReadInOneIO = Integer.parseInt(CarbonProperties.getInstance()
         .getProperty(CarbonV3DataFormatConstants.NUMBER_OF_COLUMN_TO_READ_IN_IO,
             CarbonV3DataFormatConstants.NUMBER_OF_COLUMN_TO_READ_IN_IO_DEFAULTVALUE));

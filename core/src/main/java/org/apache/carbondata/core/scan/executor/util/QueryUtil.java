@@ -50,6 +50,7 @@ import org.apache.carbondata.core.metadata.schema.table.column.CarbonMeasure;
 import org.apache.carbondata.core.scan.complextypes.ArrayQueryType;
 import org.apache.carbondata.core.scan.complextypes.PrimitiveQueryType;
 import org.apache.carbondata.core.scan.complextypes.StructQueryType;
+import org.apache.carbondata.core.scan.executor.infos.BlockExecutionInfo;
 import org.apache.carbondata.core.scan.executor.infos.KeyStructureInfo;
 import org.apache.carbondata.core.scan.expression.ColumnExpression;
 import org.apache.carbondata.core.scan.expression.Expression;
@@ -209,14 +210,15 @@ public class QueryUtil {
   public static int[] getDimensionsBlockIndexes(List<QueryDimension> queryDimensions,
       Map<Integer, Integer> dimensionOrdinalToBlockMapping,
       List<CarbonDimension> customAggregationDimension, Set<CarbonDimension> filterDimensions,
-      Set<Integer> allProjectionListDimensionIndexes, int[] sortIndexes, boolean sortFlg) {
+      Set<Integer> allProjectionListDimensionIndexes, int[] sortIndexes, BlockExecutionInfo blockExecutionInfo) {
     // using set as in row group columns will point to same block
     Set<Integer> dimensionBlockIndex = new HashSet<Integer>();
     Set<Integer> filterDimensionOrdinal = getFilterDimensionOrdinal(filterDimensions);
     int blockIndex = 0;
     for (int i = 0; i < queryDimensions.size(); i++) {
       if (queryDimensions.get(i).getDimension().hasEncoding(Encoding.IMPLICIT)
-          || (sortFlg && queryDimensions.get(i).getDimension().getOrdinal() == sortIndexes[0])) {
+          || (!blockExecutionInfo.isOrderByPrefixMdkFlg() && blockExecutionInfo.isSortFlg()
+              && queryDimensions.get(i).getDimension().getOrdinal() == sortIndexes[0])) {
         continue;
       }
 

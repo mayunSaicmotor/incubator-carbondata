@@ -687,4 +687,13 @@ public class BlockExecutionInfo {
     this.sortFlg = sortFlg;
   }
   
+  private boolean orderByPrefixMdkFlg;
+
+  public boolean isOrderByPrefixMdkFlg() {
+    return orderByPrefixMdkFlg;
+  }
+
+  public void setOrderByPrefixMdkFlg(boolean orderByPrefixMdkFlg) {
+    this.orderByPrefixMdkFlg = orderByPrefixMdkFlg;
+  }
 }
