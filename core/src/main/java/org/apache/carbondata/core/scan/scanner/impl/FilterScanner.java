@@ -19,6 +19,7 @@ package org.apache.carbondata.core.scan.scanner.impl;
 
 import java.io.IOException;
 import java.util.BitSet;
+import java.util.concurrent.ExecutorService;
 
 import org.apache.carbondata.core.constants.CarbonCommonConstants;
 import org.apache.carbondata.core.datastore.FileHolder;
@@ -67,8 +68,8 @@ public class FilterScanner extends AbstractBlockletScanner {
   private QueryStatisticsModel queryStatisticsModel;
 
   public FilterScanner(BlockExecutionInfo blockExecutionInfo,
-      QueryStatisticsModel queryStatisticsModel) {
-    super(blockExecutionInfo);
+      QueryStatisticsModel queryStatisticsModel, ExecutorService executorService) {
+    super(blockExecutionInfo, executorService);
     // to check whether min max is enabled or not
     String minMaxEnableValue = CarbonProperties.getInstance()
         .getProperty(CarbonCommonConstants.CARBON_QUERY_MIN_MAX_ENABLED,
@@ -89,7 +90,10 @@ public class FilterScanner extends AbstractBlockletScanner {
    */
   @Override public AbstractScannedResult scanBlocklet(BlocksChunkHolder blocksChunkHolder)
       throws IOException, FilterUnsupportedException {
-    return fillScannedResult(blocksChunkHolder);
+    // long start = System.currentTimeMillis();
+    AbstractScannedResult result = fillScannedResult(blocksChunkHolder);
+    // System.out.println("scanBlocklet time: " + (System.currentTimeMillis() - start));
+    return result;
   }
 
   @Override public boolean isScanRequired(BlocksChunkHolder blocksChunkHolder) throws IOException {
@@ -281,20 +285,8 @@ public class FilterScanner extends AbstractBlockletScanner {
         new DimensionColumnDataChunk[dimensionRawColumnChunks.length][indexesGroup.length];
     MeasureColumnDataChunk[][] measureColumnDataChunks =
         new MeasureColumnDataChunk[measureRawColumnChunks.length][indexesGroup.length];
-    for (int i = 0; i < dimensionRawColumnChunks.length; i++) {
-      for (int j = 0; j < indexesGroup.length; j++) {
-        if (dimensionRawColumnChunks[i] != null) {
-          dimensionColumnDataChunks[i][j] = dimensionRawColumnChunks[i].convertToDimColDataChunk(j);
-        }
-      }
-    }
-    for (int i = 0; i < measureRawColumnChunks.length; i++) {
-      for (int j = 0; j < indexesGroup.length; j++) {
-        if (measureRawColumnChunks[i] != null) {
-          measureColumnDataChunks[i][j] = measureRawColumnChunks[i].convertToMeasureColDataChunk(j);
-        }
-      }
-    }
+    convertToColDataChunk(indexesGroup.length, dimensionRawColumnChunks, measureRawColumnChunks,
+        dimensionColumnDataChunks, measureColumnDataChunks);
     scannedResult.setDimensionChunks(dimensionColumnDataChunks);
     scannedResult.setIndexes(indexesGroup);
     scannedResult.setMeasureChunks(measureColumnDataChunks);

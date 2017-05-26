@@ -217,23 +217,29 @@ public class CompressedDimensionChunkFileBasedReaderV3 extends AbstractChunkRead
     int copySourcePoint = dimensionRawColumnChunk.getOffSet() + dimensionChunksLength
         .get(dimensionRawColumnChunk.getBlockletId()) + dataChunk3.getPage_offset().get(pageNumber);
     // first read the data and uncompressed it
-    dataPage = COMPRESSOR
-        .unCompressByte(rawData.array(), copySourcePoint, dimensionColumnChunk.data_page_length);
-    copySourcePoint += dimensionColumnChunk.data_page_length;
-    // if row id block is present then read the row id chunk and uncompress it
-    if (hasEncoding(dimensionColumnChunk.encoders, Encoding.INVERTED_INDEX)) {
-      invertedIndexes = CarbonUtil
-          .getUnCompressColumnIndex(dimensionColumnChunk.rowid_page_length, rawData,
-              copySourcePoint);
-      copySourcePoint += dimensionColumnChunk.rowid_page_length;
-      // get the reverse index
+    synchronized (rawData) {
+      dataPage = COMPRESSOR
+          .unCompressByte(rawData.array(), copySourcePoint, dimensionColumnChunk.data_page_length);
+      copySourcePoint += dimensionColumnChunk.data_page_length;
+      // if row id block is present then read the row id chunk and uncompress it
+      if (hasEncoding(dimensionColumnChunk.encoders, Encoding.INVERTED_INDEX)) {
+        invertedIndexes = CarbonUtil
+            .getUnCompressColumnIndex(dimensionColumnChunk.rowid_page_length, rawData,
+                copySourcePoint);
+        copySourcePoint += dimensionColumnChunk.rowid_page_length;
+      }
+      // if rle is applied then read the rle block chunk and then uncompress
+      //then actual data based on rle block
+      if (hasEncoding(dimensionColumnChunk.encoders, Encoding.RLE)) {
+        rlePage =
+            CarbonUtil.getIntArray(rawData, copySourcePoint, dimensionColumnChunk.rle_page_length);
+      }
+    }
+    // get the reverse index
+    if (invertedIndexes != null) {
       invertedIndexesReverse = getInvertedReverseIndex(invertedIndexes);
     }
-    // if rle is applied then read the rle block chunk and then uncompress
-    //then actual data based on rle block
-    if (hasEncoding(dimensionColumnChunk.encoders, Encoding.RLE)) {
-      rlePage =
-          CarbonUtil.getIntArray(rawData, copySourcePoint, dimensionColumnChunk.rle_page_length);
+    if (rlePage != null) {
       // uncompress the data with rle indexes
       dataPage = UnBlockIndexer.uncompressData(dataPage, rlePage,
           eachColumnValueSize[dimensionRawColumnChunk.getBlockletId()]);

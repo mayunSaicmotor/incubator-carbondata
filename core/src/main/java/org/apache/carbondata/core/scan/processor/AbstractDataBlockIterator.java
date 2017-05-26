@@ -92,9 +92,11 @@ public abstract class AbstractDataBlockIterator extends CarbonIterator<List<Obje
     dataBlockIterator = new BlockletIterator(blockExecutionInfo.getFirstDataBlock(),
         blockExecutionInfo.getNumberOfBlockToScan());
     if (blockExecutionInfo.getFilterExecuterTree() != null) {
-      blockletScanner = new FilterScanner(blockExecutionInfo, queryStatisticsModel);
+      blockletScanner = new FilterScanner(blockExecutionInfo, queryStatisticsModel,
+          executorService);
     } else {
-      blockletScanner = new NonFilterScanner(blockExecutionInfo, queryStatisticsModel);
+      blockletScanner = new NonFilterScanner(blockExecutionInfo, queryStatisticsModel,
+          executorService);
     }
     this.scannerResultAggregator =
         ResultCollectorFactory.getScannedResultCollector(blockExecutionInfo);

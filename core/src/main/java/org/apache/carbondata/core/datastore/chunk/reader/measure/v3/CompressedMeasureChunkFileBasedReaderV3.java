@@ -224,9 +224,11 @@ public class CompressedMeasureChunkFileBasedReaderV3 extends AbstractMeasureChun
     ValueCompressionHolder values = compressionModel.getValueCompressionHolder()[0];
     // uncompress
     ByteBuffer rawData = measureRawColumnChunk.getRawData();
-    values.uncompress(compressionModel.getConvertedDataType()[0], rawData.array(), copyPoint,
-        measureColumnChunk.data_page_length, compressionModel.getMantissa()[0],
-        compressionModel.getMaxValue()[0], measureRawColumnChunk.getRowCount()[pageNumber]);
+    synchronized (rawData) {
+      values.uncompress(compressionModel.getConvertedDataType()[0], rawData.array(), copyPoint,
+          measureColumnChunk.data_page_length, compressionModel.getMantissa()[0],
+          compressionModel.getMaxValue()[0], measureRawColumnChunk.getRowCount()[pageNumber]);
+    }
     CarbonReadDataHolder measureDataHolder = new CarbonReadDataHolder(values);
     // set the data chunk
     datChunk.setMeasureDataHolder(measureDataHolder);

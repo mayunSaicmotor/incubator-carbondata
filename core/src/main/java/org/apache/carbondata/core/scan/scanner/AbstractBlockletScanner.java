@@ -17,6 +17,12 @@
 package org.apache.carbondata.core.scan.scanner;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 
 import org.apache.carbondata.core.constants.CarbonCommonConstants;
 import org.apache.carbondata.core.datastore.chunk.DimensionColumnDataChunk;
@@ -47,9 +53,12 @@ public abstract class AbstractBlockletScanner implements BlockletScanner {
   public QueryStatisticsModel queryStatisticsModel;
 
   private AbstractScannedResult emptyResult;
+  protected ExecutorService executorService;
 
-  public AbstractBlockletScanner(BlockExecutionInfo tableBlockExecutionInfos) {
+  public AbstractBlockletScanner(BlockExecutionInfo tableBlockExecutionInfos,
+      ExecutorService executorService) {
     this.blockExecutionInfo = tableBlockExecutionInfos;
+    this.executorService = executorService;
   }
 
   @Override public AbstractScannedResult scanBlocklet(BlocksChunkHolder blocksChunkHolder)
@@ -82,21 +91,28 @@ public abstract class AbstractBlockletScanner implements BlockletScanner {
         blocksChunkHolder.getDimensionRawDataChunk();
     DimensionColumnDataChunk[][] dimensionColumnDataChunks =
         new DimensionColumnDataChunk[dimensionRawColumnChunks.length][];
-    for (int i = 0; i < dimensionRawColumnChunks.length; i++) {
+
+    /*    for (int i = 0; i < dimensionRawColumnChunks.length; i++) {
       if (dimensionRawColumnChunks[i] != null) {
         dimensionColumnDataChunks[i] = dimensionRawColumnChunks[i].convertToDimColDataChunks();
       }
     }
-    scannedResult.setDimensionChunks(dimensionColumnDataChunks);
+    scannedResult.setDimensionChunks(dimensionColumnDataChunks);*/
     MeasureRawColumnChunk[] measureRawColumnChunks = blocksChunkHolder.getMeasureRawDataChunk();
     MeasureColumnDataChunk[][] measureColumnDataChunks =
         new MeasureColumnDataChunk[measureRawColumnChunks.length][];
-    for (int i = 0; i < measureRawColumnChunks.length; i++) {
+    /*    for (int i = 0; i < measureRawColumnChunks.length; i++) {
       if (measureRawColumnChunks[i] != null) {
         measureColumnDataChunks[i] = measureRawColumnChunks[i].convertToMeasureColDataChunks();
       }
     }
+    scannedResult.setMeasureChunks(measureColumnDataChunks);*/
+
+    convertToColDataChunk(0, dimensionRawColumnChunks, measureRawColumnChunks,
+        dimensionColumnDataChunks, measureColumnDataChunks);
+    scannedResult.setDimensionChunks(dimensionColumnDataChunks);
     scannedResult.setMeasureChunks(measureColumnDataChunks);
+
     int[] numberOfRows = new int[] { blocksChunkHolder.getDataBlock().nodeSize() };
     if (blockExecutionInfo.getAllSelectedDimensionBlocksIndexes().length > 0) {
       for (int i = 0; i < dimensionRawColumnChunks.length; i++) {
@@ -159,5 +175,117 @@ public abstract class AbstractBlockletScanner implements BlockletScanner {
   @Override public boolean isScanRequired(BlocksChunkHolder blocksChunkHolder) throws IOException {
     // For non filter it is always true
     return true;
+  }
+
+  protected class CarbonDimCallable implements Callable<DimensionColumnDataChunk[]> {
+    DimensionRawColumnChunk rawDim;
+    int numberOfPages;
+
+    public CarbonDimCallable(DimensionRawColumnChunk rawDim, int numberOfPages) {
+      this.rawDim = rawDim;
+      this.numberOfPages = numberOfPages == 0 ? rawDim.getPagesCount() : numberOfPages;
+    }
+
+    @Override
+    public DimensionColumnDataChunk[] call() throws Exception {
+
+      DimensionColumnDataChunk[] dims = new DimensionColumnDataChunk[numberOfPages];
+      for (int j = 0; j < numberOfPages; j++) {
+
+        dims[j] = rawDim.convertToDimColDataChunk(j);
+
+      }
+      return dims;
+    }
+  }
+
+  protected class CarbonMeasureCallable implements Callable<MeasureColumnDataChunk[]> {
+    MeasureRawColumnChunk rawMeasure;
+    int numberOfPages;
+
+    public CarbonMeasureCallable(MeasureRawColumnChunk rawMeasure, int numberOfPages) {
+      this.rawMeasure = rawMeasure;
+      this.numberOfPages = numberOfPages == 0 ? rawMeasure.getPagesCount() : numberOfPages;
+    }
+
+    @Override
+    public MeasureColumnDataChunk[] call() throws Exception {
+
+      MeasureColumnDataChunk[] measures = new MeasureColumnDataChunk[numberOfPages];
+      for (int j = 0; j < numberOfPages; j++) {
+        measures[j] = rawMeasure.convertToMeasureColDataChunk(j);
+      }
+      return measures;
+    }
+  }
+  public void convertToColDataChunk(int numberOfPages,
+      DimensionRawColumnChunk[] dimensionRawColumnChunks,
+      MeasureRawColumnChunk[] measureRawColumnChunks,
+      DimensionColumnDataChunk[][] dimensionColumnDataChunks,
+      MeasureColumnDataChunk[][] measureColumnDataChunks) throws IOException {
+    List<Future<?>> futureList = new ArrayList<Future<?>>(
+        dimensionRawColumnChunks.length + measureRawColumnChunks.length);
+    // ExecutorService executorService = Executors.newCachedThreadPool();
+    for (int i = 0; i < dimensionRawColumnChunks.length; i++) {
+      if (dimensionRawColumnChunks[i] != null) {
+        futureList.add(executorService
+            .submit(new CarbonDimCallable(dimensionRawColumnChunks[i], numberOfPages)));
+      }
+    }
+    for (int i = 0; i < measureRawColumnChunks.length; i++) {
+      if (measureRawColumnChunks[i] != null) {
+        futureList.add(executorService
+            .submit(new CarbonMeasureCallable(measureRawColumnChunks[i], numberOfPages)));
+      }
+    }
+
+    try {
+      int cnt = 0;
+      for (int i = 0; i < dimensionRawColumnChunks.length; i++) {
+        if (dimensionRawColumnChunks[i] != null) {
+          dimensionColumnDataChunks[i] = (DimensionColumnDataChunk[]) futureList.get(cnt).get();
+          cnt++;
+        }
+      }
+      for (int i = 0; i < measureRawColumnChunks.length; i++) {
+
+        if (measureRawColumnChunks[i] != null) {
+          measureColumnDataChunks[i] = (MeasureColumnDataChunk[]) futureList.get(cnt).get();
+          cnt++;
+        }
+      }
+    } catch (InterruptedException | ExecutionException e) {
+      throw new RuntimeException(e);
+    }
+
+    /* if (numberOfPages > 0) {
+      for (int i = 0; i < dimensionRawColumnChunks.length; i++) {
+        for (int j = 0; j < numberOfPages; j++) {
+          if (dimensionRawColumnChunks[i] != null) {
+            dimensionColumnDataChunks[i][j] = dimensionRawColumnChunks[i]
+                .convertToDimColDataChunk(j);
+          }
+        }
+      }
+      for (int i = 0; i < measureRawColumnChunks.length; i++) {
+        for (int j = 0; j < numberOfPages; j++) {
+          if (measureRawColumnChunks[i] != null) {
+            measureColumnDataChunks[i][j] = measureRawColumnChunks[i]
+                .convertToMeasureColDataChunk(j);
+          }
+        }
+      }
+    } else {
+      for (int i = 0; i < dimensionRawColumnChunks.length; i++) {
+        if (dimensionRawColumnChunks[i] != null) {
+          dimensionColumnDataChunks[i] = dimensionRawColumnChunks[i].convertToDimColDataChunks();
+        }
+      }
+      for (int j = 0; j < measureRawColumnChunks.length; j++) {
+        if (measureRawColumnChunks[j] != null) {
+          measureColumnDataChunks[j] = measureRawColumnChunks[j].convertToMeasureColDataChunks();
+        }
+      }
+    }*/
   }
 }
