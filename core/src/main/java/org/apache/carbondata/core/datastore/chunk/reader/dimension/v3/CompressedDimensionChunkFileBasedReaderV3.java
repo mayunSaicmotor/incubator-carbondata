@@ -232,12 +232,15 @@ public class CompressedDimensionChunkFileBasedReaderV3 extends AbstractChunkRead
     }
     // if rle is applied then read the rle block chunk and then uncompress
     //then actual data based on rle block
+    boolean bitMapFlg = hasEncoding(dimensionColumnChunk.encoders, Encoding.BITMAP);
     if (hasEncoding(dimensionColumnChunk.encoders, Encoding.RLE)) {
       rlePage =
           CarbonUtil.getIntArray(rawData, copySourcePoint, dimensionColumnChunk.rle_page_length);
       // uncompress the data with rle indexes
-      dataPage = UnBlockIndexer.uncompressData(dataPage, rlePage,
-          eachColumnValueSize[dimensionRawColumnChunk.getBlockletId()]);
+      dataPage = bitMapFlg
+          ? UnBlockIndexer.uncompressBitmapData(dataPage, rlePage)
+          : UnBlockIndexer.uncompressData(dataPage, rlePage,
+              eachColumnValueSize[dimensionRawColumnChunk.getBlockletId()]);
       rlePage = null;
     }
     // fill chunk attributes
@@ -256,7 +259,7 @@ public class CompressedDimensionChunkFileBasedReaderV3 extends AbstractChunkRead
           new VariableLengthDimensionDataChunk(dataPage, invertedIndexes, invertedIndexesReverse,
               dimensionRawColumnChunk.getRowCount()[pageNumber]);
     } else {
-      if (hasEncoding(dimensionColumnChunk.encoders, Encoding.BITMAP)) {
+      if (bitMapFlg) {
         columnDataChunk = new BitMapDimensionDataChunk(dataPage,
             dimensionColumnChunk.getBitmap_encoded_dictionary_list(),
             dimensionColumnChunk.getBitmap_encoded_page_offset_list(),

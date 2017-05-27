@@ -39,7 +39,7 @@ object CarbonBitMapEncodingExample {
            (ID Int, date Date, country String,
            name String, phonetype String, serialname char(10), salary Int)
            STORED BY 'carbondata'
-           TBLPROPERTIES ('BITMAP'='country,name')
+           TBLPROPERTIES ('BITMAP'='country')
            """)
 
     // Load data
@@ -60,7 +60,7 @@ object CarbonBitMapEncodingExample {
            WHERE country IN ('china','france') and name = 'aaa10'
            """).show()
     // Drop table
-    cc.sql("DROP TABLE IF EXISTS t3")
+    // cc.sql("DROP TABLE IF EXISTS t3")
   }
 
 }

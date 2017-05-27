@@ -757,18 +757,19 @@ public class CarbonMetadataUtil {
           encodings.add(Encoding.DIRECT_DICTIONARY);
         }
         dataChunk.setRowMajor(nodeHolder.getColGrpBlocks()[index]);
-        if (!containsEncoding(index, Encoding.BITMAP, columnSchema, segmentProperties)) {
+        // if (!containsEncoding(index, Encoding.BITMAP, columnSchema, segmentProperties)) {
           // TODO : Once schema PR is merged and information needs to be passed
           // here.
           if (nodeHolder.getAggBlocks()[index]) {
             dataChunk.setRle_page_length(nodeHolder.getDataIndexMapLength()[index]);
             encodings.add(Encoding.RLE);
           }
-          if (!nodeHolder.getIsSortedKeyBlock()[index]) {
+        if (!nodeHolder.getIsSortedKeyBlock()[index]
+            && !containsEncoding(index, Encoding.BITMAP, columnSchema, segmentProperties)) {
             dataChunk.setRowid_page_length(nodeHolder.getKeyBlockIndexLength()[index]);
             encodings.add(Encoding.INVERTED_INDEX);
           }
-        }
+        // }
         dataChunk.setSort_state(nodeHolder.getIsSortedKeyBlock()[index] ?
             SortState.SORT_EXPLICIT :
             SortState.SORT_NATIVE);
