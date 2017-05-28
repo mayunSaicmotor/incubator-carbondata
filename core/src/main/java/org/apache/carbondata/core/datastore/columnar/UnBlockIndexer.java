@@ -77,6 +77,7 @@ public final class UnBlockIndexer {
   }
 
   public static byte[] uncompressBitmapData(byte[] data, int[] index) {
+    long start = System.nanoTime();
     if (index.length < 1) {
       return data;
     }
@@ -100,6 +101,7 @@ public final class UnBlockIndexer {
       srcPos ++;
     }
     System.arraycopy(data, srcPos, uncompressedData, destPos, data.length - compressedDataLen);
+    // System.out.println("uncompressBitmapData"+(System.nanoTime() -start));
     return uncompressedData;
   }
 }

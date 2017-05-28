@@ -47,7 +47,7 @@ public class SafeBitMapDimensionDataChunkStore extends SafeAbsractDimensionDataC
     int arraySize = bitmap_encoded_dictionaries.size();
     this.bitmap_encoded_dictionaries = new byte[arraySize][];
     this.bitmap_data_pages_offset = new int[bitmap_data_pages_offset.size()];
-    for (int i = 0; i < arraySize; i++) {
+    for (byte i = 0; i < arraySize; i++) {
       this.bitmap_encoded_dictionaries[i] = ByteUtil
           .convertIntToByteArray(bitmap_encoded_dictionaries.get(i), columnValueSize);
       this.bitmap_data_pages_offset[i] = bitmap_data_pages_offset.get(i);
@@ -149,8 +149,76 @@ public class SafeBitMapDimensionDataChunkStore extends SafeAbsractDimensionDataC
    * @return BitSet
    */
   public BitSet applyFilter(byte[][] filterValues, FilterOperator operator, int numerOfRows) {
+
+    byte[] inBitSet = new byte[bitmap_encoded_dictionaries.length];
+    byte inCnt = 0;
+    // BitSet notInBitSet = new BitSet(bitmap_encoded_dictionaries.length);
+    for (byte i = 0; i < bitmap_encoded_dictionaries.length; i++) {
+      int index = CarbonUtil.binarySearch(filterValues, 0, filterValues.length - 1,
+          bitmap_encoded_dictionaries[i]);
+      if (index >= 0) {
+        inBitSet[i]=1;
+        inCnt++;
+        // inBitSetList.add(bitSetGroup.getBitSet(i));
+      }
+    }
+    if (FilterOperator.NOT_IN.equals(operator)) {
+      return getBitSetResult(numerOfRows, inBitSet, true, inCnt);
+    } else {
+      return getBitSetResult(numerOfRows, inBitSet, false, inCnt);
+    }
+  }
+
+  private BitSet getBitSetResult(int numerOfRows, byte[] inBitSetList, boolean notInFlg, byte inCnt) {
+
+    // int inCnt = inBitSetList.cardinality();
+    if ((notInFlg && inCnt == bitmap_encoded_dictionaries.length) || (!notInFlg && inCnt == 0)) {
+      return null;
+    }
+    if ((!notInFlg && inCnt == bitmap_encoded_dictionaries.length) || (notInFlg && inCnt == 0)) {
+      if (bitmap_encoded_dictionaries.length == 1) {
+        return loadBitSet(0);
+      }
+      BitSet resultBitSet = new BitSet(numerOfRows);
+      resultBitSet.flip(0, numerOfRows);
+      return resultBitSet;
+    }
+
+    if (inCnt << 2 < bitmap_encoded_dictionaries.length) {
+      return bitSetOr(inBitSetList, notInFlg, numerOfRows, (byte)1);
+    } else {
+      //inBitSetList.flip(0, bitmap_encoded_dictionaries.length);
+      return bitSetOr(inBitSetList, !notInFlg, numerOfRows, (byte)0);
+    }
+  }
+
+  private BitSet bitSetOr(byte[] bitSetList, boolean flipFlg, int numerOfRows, byte equalValue) {
+    BitSet resultBitSet = null;
+    for(byte i =0; i< bitSetList.length; i++){
+      if(bitSetList[i] == equalValue){
+        if (resultBitSet == null) {
+          resultBitSet = loadBitSet(i);
+        } else {
+          resultBitSet.or(loadBitSet(i));
+        }
+      }
+    }
+    if (flipFlg) {
+      resultBitSet.flip(0, numerOfRows);
+    }
+    return resultBitSet;
+  }
+
+  /**
+   * apply Filter
+   *
+   * @param filterValues
+   * @param operator
+   * @return BitSet
+   */
+   public BitSet applyFilter2(byte[][] filterValues, FilterOperator operator, int numerOfRows) {
     BitSet bitSet = null;
-    for (int i = 0; i < filterValues.length; i++) {
+    for (byte i = 0; i < filterValues.length; i++) {
       int index = CarbonUtil.binarySearch(bitmap_encoded_dictionaries, 0,
           bitmap_encoded_dictionaries.length - 1, filterValues[i]);
       if (index >= 0) {
@@ -170,12 +238,74 @@ public class SafeBitMapDimensionDataChunkStore extends SafeAbsractDimensionDataC
     }
     return bitSet;
   }
+  /**
+   * apply Filter
+   *
+   * @param filterValues
+   * @param operator
+   * @return BitSet
+   */
+  public BitSet applyFilter1(byte[][] filterValues, FilterOperator operator, int numerOfRows) {
 
+    BitSet inBitSet = new BitSet(bitmap_encoded_dictionaries.length);
+    // BitSet notInBitSet = new BitSet(bitmap_encoded_dictionaries.length);
+    for (byte i = 0; i < bitmap_encoded_dictionaries.length; i++) {
+      int index = CarbonUtil.binarySearch(filterValues, 0, filterValues.length - 1,
+          bitmap_encoded_dictionaries[i]);
+      if (index >= 0) {
+        inBitSet.set(i, true);
+        // inBitSetList.add(bitSetGroup.getBitSet(i));
+      }
+    }
+    if (FilterOperator.NOT_IN.equals(operator)) {
+      return getBitSetResult(numerOfRows, inBitSet, true);
+    } else {
+      return getBitSetResult(numerOfRows, inBitSet, false);
+    }
+  }
+
+  private BitSet getBitSetResult(int numerOfRows, BitSet inBitSetList, boolean notInFlg) {
+
+    int inCnt = inBitSetList.cardinality();
+    if ((notInFlg && inCnt == bitmap_encoded_dictionaries.length) || (!notInFlg && inCnt == 0)) {
+      return null;
+    }
+    if ((!notInFlg && inCnt == bitmap_encoded_dictionaries.length) || (notInFlg && inCnt == 0)) {
+      if (bitmap_encoded_dictionaries.length == 1) {
+        return loadBitSet(0);
+      }
+      BitSet resultBitSet = new BitSet(numerOfRows);
+      resultBitSet.flip(0, numerOfRows);
+      return resultBitSet;
+    }
+
+    if (inCnt << 2 < bitmap_encoded_dictionaries.length) {
+      return bitSetOr(inBitSetList, notInFlg, numerOfRows);
+    } else {
+      inBitSetList.flip(0, bitmap_encoded_dictionaries.length);
+      return bitSetOr(inBitSetList, !notInFlg, numerOfRows);
+    }
+  }
+
+  private BitSet bitSetOr(BitSet bitSetList, boolean flipFlg, int numerOfRows) {
+    BitSet resultBitSet = null;
+    for (int i = bitSetList.nextSetBit(0); i >= 0; i = bitSetList.nextSetBit(i + 1)) {
+      if (resultBitSet == null) {
+        resultBitSet = loadBitSet(i);
+      } else {
+        resultBitSet.or(loadBitSet(i));
+      }
+    }
+    if (flipFlg) {
+      resultBitSet.flip(0, numerOfRows);
+    }
+    return resultBitSet;
+  }
   private void loadAllBitSets() {
     if (isGeneratedBitSetFlg) {
       return;
     }
-    for (int i = 0; i < bitmap_encoded_dictionaries.length; i++) {
+    for (byte i = 0; i < bitmap_encoded_dictionaries.length; i++) {
       bitSetGroup.setBitSet(loadBitSet(i), i);
     }
     isGeneratedBitSetFlg = true;

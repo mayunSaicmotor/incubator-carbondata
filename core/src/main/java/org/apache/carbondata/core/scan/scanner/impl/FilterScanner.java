@@ -91,7 +91,7 @@ public class FilterScanner extends AbstractBlockletScanner {
       throws IOException, FilterUnsupportedException {
     long start = System.currentTimeMillis();
     AbstractScannedResult result = fillScannedResult(blocksChunkHolder);
-    System.out.println("scanBlocklet time: " + (System.currentTimeMillis() - start));
+    // System.out.println("scanBlocklet time: " + (System.currentTimeMillis() - start));
     return result;
   }
 
@@ -122,10 +122,32 @@ public class FilterScanner extends AbstractBlockletScanner {
     }
     return this.filterExecuter.isReadRequired(blocksChunkHolder);
   }
+  public static long readTime = 0;
+  public static long filterTime = 0;
+
+  public static synchronized void printReadTime() {
+    System.out.println("readTime: " + readTime);
+    // readTime = 0;
+  }
+
+  public static synchronized void printFilterTime() {
+    System.out.println("filterTime: " + filterTime);
+    // filterTime = 0;
+  }
+
+  public static synchronized void addReadTime(long time) {
+    readTime = readTime + time;
+  }
+  public static synchronized void addFilterTime(long time) {
+    filterTime = filterTime + time;
+  }
 
   @Override public void readBlocklet(BlocksChunkHolder blocksChunkHolder) throws IOException {
     long startTime = System.currentTimeMillis();
+    long start = System.nanoTime();
     this.filterExecuter.readBlocks(blocksChunkHolder);
+    addReadTime(System.nanoTime() - start);
+
     // adding statistics for carbon read time
     QueryStatistic readTime = queryStatisticsModel.getStatisticsTypeAndObjMap()
         .get(QueryStatisticsConstants.READ_BLOCKlET_TIME);
@@ -153,18 +175,22 @@ public class FilterScanner extends AbstractBlockletScanner {
   private AbstractScannedResult fillScannedResult(BlocksChunkHolder blocksChunkHolder)
       throws FilterUnsupportedException, IOException {
     long startTime = System.currentTimeMillis();
-    long start = System.currentTimeMillis();
+    long start = System.nanoTime();
     // apply filter on actual data
     BitSetGroup bitSetGroup = this.filterExecuter.applyFilter(blocksChunkHolder);
+    System.out.println("filterExecuter.applyFilter time: " + (System.currentTimeMillis() - startTime));
+    addFilterTime(System.nanoTime() - start);
+    // this.printReadTime();
+    // this.printFilterTime();
     // if indexes is empty then return with empty result
     if (bitSetGroup.isEmpty()) {
       CarbonUtil.freeMemory(blocksChunkHolder.getDimensionRawDataChunk(),
           blocksChunkHolder.getMeasureRawDataChunk());
       return createEmptyResult();
     }
-    System.out.println("filterExecuter.applyFilter time: " + (System.currentTimeMillis() - start));
+    //     System.out.println("filterExecuter.applyFilter time: "
+    //     + (System.nanoTime() - start));
     start = System.currentTimeMillis();
-    
     AbstractScannedResult scannedResult = new FilterQueryScannedResult(blockExecutionInfo);
     scannedResult.setBlockletId(
         blockExecutionInfo.getBlockId() + CarbonCommonConstants.FILE_SEPARATOR + blocksChunkHolder
@@ -210,7 +236,7 @@ public class FilterScanner extends AbstractBlockletScanner {
     deleteCacheLoader.loadDeleteDeltaFileDataToCache();
     scannedResult
         .setBlockletDeleteDeltaCache(blocksChunkHolder.getDataBlock().getDeleteDeltaDataCache());
-    System.out.println("get index time: " + (System.currentTimeMillis() - start));
+    // System.out.println("get index time: " + (System.currentTimeMillis() - start));
     start = System.currentTimeMillis();
     FileHolder fileReader = blocksChunkHolder.getFileReader();
     int[][] allSelectedDimensionBlocksIndexes =
@@ -277,7 +303,7 @@ public class FilterScanner extends AbstractBlockletScanner {
             .getMeasureChunk(fileReader, projectionListMeasureIndexes[i]);
       }
     }
-    System.out.println("read dim and measure time: " + (System.currentTimeMillis() - start));
+    // System.out.println("read dim and measure time: " + (System.currentTimeMillis() - start));
     start = System.currentTimeMillis();
 
     DimensionColumnDataChunk[][] dimensionColumnDataChunks =
@@ -298,7 +324,7 @@ public class FilterScanner extends AbstractBlockletScanner {
         }
       }
     }
-    System.out.println("convertToColDataChunk time: " + (System.currentTimeMillis() - start));
+    // System.out.println("convertToColDataChunk time: " + (System.currentTimeMillis() - start));
     start = System.currentTimeMillis();
     scannedResult.setDimensionChunks(dimensionColumnDataChunks);
     scannedResult.setIndexes(indexesGroup);
