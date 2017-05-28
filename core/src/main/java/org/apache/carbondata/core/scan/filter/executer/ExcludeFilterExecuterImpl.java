@@ -176,12 +176,14 @@ public class ExcludeFilterExecuterImpl extends AbstractFilterExecuter {
   }
 
   @Override public void readBlocks(BlocksChunkHolder blockChunkHolder) throws IOException {
+    long start = System.currentTimeMillis();
     int blockIndex = segmentProperties.getDimensionOrdinalToBlockMapping()
         .get(dimColEvaluatorInfo.getColumnIndex());
     if (null == blockChunkHolder.getDimensionRawDataChunk()[blockIndex]) {
       blockChunkHolder.getDimensionRawDataChunk()[blockIndex] = blockChunkHolder.getDataBlock()
           .getDimensionChunk(blockChunkHolder.getFileReader(), blockIndex);
     }
+    System.out.println("readBlocks time for filter column: " + (System.currentTimeMillis() - start));
   }
   @Override public boolean isReadRequired(BlocksChunkHolder blockChunkHolder) {
     int blockIndex = segmentProperties.getDimensionOrdinalToBlockMapping()

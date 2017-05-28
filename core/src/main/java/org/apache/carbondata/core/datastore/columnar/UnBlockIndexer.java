@@ -76,4 +76,30 @@ public final class UnBlockIndexer {
     return uncompressedData;
   }
 
+  public static byte[] uncompressBitmapData(byte[] data, int[] index) {
+    if (index.length < 1) {
+      return data;
+    }
+    int compressedDataLen = index.length >>> 1;
+    int numberOfCopy = 0;
+    int actualSize = 0;
+    int srcPos = 0;
+    int destPos = 0;
+    for (int i = 1; i < index.length; i += 2) {
+      actualSize += index[i];
+    }
+    byte[] uncompressedData = new byte[actualSize + data.length - compressedDataLen];
+    int picIndex = 0;
+    for (int i = 0; i <  compressedDataLen; i ++) {
+      numberOfCopy = index[picIndex * 2 + 1];
+      picIndex++;
+      for (int j = 0; j < numberOfCopy; j++) {
+        System.arraycopy(data, srcPos, uncompressedData, destPos, 1);
+        destPos ++;
+      }
+      srcPos ++;
+    }
+    System.arraycopy(data, srcPos, uncompressedData, destPos, data.length - compressedDataLen);
+    return uncompressedData;
+  }
 }

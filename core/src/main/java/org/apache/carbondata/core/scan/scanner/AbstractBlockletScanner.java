@@ -17,6 +17,8 @@
 package org.apache.carbondata.core.scan.scanner;
 
 import java.io.IOException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.apache.carbondata.core.constants.CarbonCommonConstants;
 import org.apache.carbondata.core.datastore.chunk.DimensionColumnDataChunk;
@@ -47,7 +49,7 @@ public abstract class AbstractBlockletScanner implements BlockletScanner {
   public QueryStatisticsModel queryStatisticsModel;
 
   private AbstractScannedResult emptyResult;
-
+  protected ExecutorService executorService = Executors.newFixedThreadPool(5);
   public AbstractBlockletScanner(BlockExecutionInfo tableBlockExecutionInfos) {
     this.blockExecutionInfo = tableBlockExecutionInfos;
   }

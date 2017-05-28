@@ -23,7 +23,7 @@ import org.apache.carbondata.core.constants.CarbonCommonConstants
 import org.apache.carbondata.core.util.CarbonProperties
 import org.apache.carbondata.examples.util.ExampleUtils
 
-object CarbonBitMapFilterQueryExample {
+object CarbonBitMapFilterQueryCompare {
   def main(args: Array[String]) {
     val cc = ExampleUtils.createCarbonContext("CarbonBitMapFilterQueryExample")
     val testData = ExampleUtils.currentPath + "/src/main/resources/data.csv"
@@ -32,34 +32,9 @@ object CarbonBitMapFilterQueryExample {
     CarbonProperties.getInstance()
       .addProperty(CarbonCommonConstants.CARBON_TIMESTAMP_FORMAT, "yyyy/MM/dd")
 
-/*    cc.sql("DROP TABLE IF EXISTS t3")
-
-    // Create table, 6 dimensions, 2 measure
-    cc.sql("""
-           CREATE TABLE IF NOT EXISTS t3
-           (ID Int, date Date, country String,
-           name String, phonetype String, serialname char(10), salary Int)
-           STORED BY 'carbondata'
-           TBLPROPERTIES ('BITMAP'='country')
-           """)
-    // Load data
-    cc.sql(s"""
-           LOAD DATA LOCAL INPATH '$testData' into table t3
-           """)
-*/
-//    cc.sql("""
-//           SELECT country, count(*)
-//           FROM t3
-//           group by country
-//           """).show(10)
-//    cc.sql("""
-//           SELECT count(*)
-//           FROM t3
-//           """).show(10)
-
     // scalastyle:off println
-    var maxTestTimes = 4
-    var timeCostSeq =Seq[LinkedHashMap[String, Long]]()
+    var maxTestTimes = 1
+    var timeCostSeq = Seq[LinkedHashMap[String, Long]]()
     for (testNo <- 1 to maxTestTimes) {
       var timeCostMap = LinkedHashMap[String, Long]();
       var start: Long = System.currentTimeMillis()
@@ -68,6 +43,7 @@ object CarbonBitMapFilterQueryExample {
            SELECT country, serialname, phonetype, salary, name, id
            FROM t3
            WHERE country <> 'china'
+           
            """).show(10)
       }
       timeCostMap += ("country <> 'china': "
@@ -80,6 +56,7 @@ object CarbonBitMapFilterQueryExample {
            SELECT country, serialname, phonetype, salary, name, id
            FROM t3
            WHERE country = 'china'
+           
            """).show(10)
       }
       timeCostMap += ("country = 'china': "
@@ -92,6 +69,7 @@ object CarbonBitMapFilterQueryExample {
            SELECT country, serialname, phonetype, salary, name, id
            FROM t3
            WHERE country <> 'france'
+           
            """).show(10)
       }
       timeCostMap += ("country <> 'france' query time: "
@@ -104,6 +82,7 @@ object CarbonBitMapFilterQueryExample {
            SELECT country, serialname, phonetype, salary, name, id
            FROM t3
            WHERE country = 'france'
+           
            """).show(10)
       }
       timeCostMap += ("country = 'france' query time: "
@@ -115,6 +94,7 @@ object CarbonBitMapFilterQueryExample {
            SELECT country, serialname, phonetype, salary, name, id
            FROM t3
            WHERE country IN ('france')
+           
            """).show(10)
       }
       timeCostMap += ("country IN ('france') query time: "
@@ -128,6 +108,7 @@ object CarbonBitMapFilterQueryExample {
            FROM t3
            WHERE country <> 'china' and country <> 'canada' and country <> 'indian'
            and country <> 'uk'
+           
            """).show(10)
       }
       timeCostMap += ("country <> 'china' and country <> 'canada' and country <> 'indian'"
@@ -142,6 +123,7 @@ object CarbonBitMapFilterQueryExample {
            SELECT country, serialname, phonetype, salary, name, id
            FROM t3
            WHERE country not in ('china','canada','indian','usa','uk')
+           
            """).show(10)
       }
       timeCostMap += ("country not in ('china','canada','indian','usa','uk') query time: "
@@ -155,6 +137,7 @@ object CarbonBitMapFilterQueryExample {
            SELECT country, serialname, phonetype, salary, name, id
            FROM t3
            WHERE country IN ('china','usa','uk')
+           
            """).show(10)
       }
       timeCostMap += ("country IN ('china','usa','uk') query time: "
@@ -167,6 +150,7 @@ object CarbonBitMapFilterQueryExample {
            SELECT country, serialname, phonetype, salary, name, id
            FROM t3
            WHERE country = 'china' or country = 'indian' or country = 'usa'
+           
            """).show(10)
       }
       timeCostMap += ("country = 'china' or country = 'indian' or country = 'usa' query time: "
@@ -180,6 +164,7 @@ object CarbonBitMapFilterQueryExample {
            SELECT country, serialname, phonetype, salary, name, id
            FROM t3
            WHERE country between 'china' and 'indian'
+           
            """).show(10)
       }
       timeCostMap += ("country between 'china' and 'indian' query time: "
@@ -187,33 +172,7 @@ object CarbonBitMapFilterQueryExample {
       println("country between 'china' and 'indian' query time: "
         + (System.currentTimeMillis() - start))
 
-      start = System.currentTimeMillis()
-      for (index <- 1 to 1) {
-        cc.sql("""
-           SELECT count(country)
-           FROM t3
-           WHERE country = 'china' or country = 'indian' or country = 'uk'
-           """).show(10)
-      }
-      timeCostMap += ("country = 'china' or country = 'indian' or country = 'uk' count query time: "
-        -> new java.lang.Long(System.currentTimeMillis() - start))
-      println("country = 'china' or country = 'indian' or country = 'uk' count query time: "
-        + (System.currentTimeMillis() - start))
-
-      start = System.currentTimeMillis()
-      for (index <- 1 to 1) {
-        cc.sql("""
-           SELECT count(country)
-           FROM t3
-           WHERE country <> 'china' and country <> 'indian'
-           """).show(10)
-      }
-      timeCostMap += ("country <> 'china' and country <> 'indian' count query time: "
-        -> new java.lang.Long(System.currentTimeMillis() - start))
-      println("country <> 'china' and country <> 'indian' count query time: "
-        + (System.currentTimeMillis() - start))
-
-      timeCostSeq=timeCostSeq :+ timeCostMap
+      timeCostSeq = timeCostSeq :+ timeCostMap
     }
     // Drop table
     // cc.sql("DROP TABLE IF EXISTS t3")

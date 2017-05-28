@@ -43,10 +43,12 @@ public class BitMapDimensionDataChunk extends AbstractDimensionDataChunk {
   public BitMapDimensionDataChunk(byte[] dataChunk, List<Integer> bitmap_encoded_dictionaries,
       List<Integer> bitmap_data_pages_length, int numberOfRows, int columnValueSize) {
     long totalSize = dataChunk.length;
+    // long startTime = System.currentTimeMillis();
     dataChunkStore = DimensionChunkStoreFactory.INSTANCE.getDimensionChunkStore(columnValueSize,
         false, bitmap_encoded_dictionaries.size(), totalSize, DimensionStoreType.BITMAP,
         bitmap_encoded_dictionaries, bitmap_data_pages_length);
     dataChunkStore.putArray(null, null, dataChunk);
+    // System.out.println("putArray" + (System.currentTimeMillis() - startTime));
   }
 
   /**

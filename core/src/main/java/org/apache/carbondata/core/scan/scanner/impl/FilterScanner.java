@@ -89,7 +89,10 @@ public class FilterScanner extends AbstractBlockletScanner {
    */
   @Override public AbstractScannedResult scanBlocklet(BlocksChunkHolder blocksChunkHolder)
       throws IOException, FilterUnsupportedException {
-    return fillScannedResult(blocksChunkHolder);
+    long start = System.currentTimeMillis();
+    AbstractScannedResult result = fillScannedResult(blocksChunkHolder);
+    System.out.println("scanBlocklet time: " + (System.currentTimeMillis() - start));
+    return result;
   }
 
   @Override public boolean isScanRequired(BlocksChunkHolder blocksChunkHolder) throws IOException {
@@ -150,6 +153,7 @@ public class FilterScanner extends AbstractBlockletScanner {
   private AbstractScannedResult fillScannedResult(BlocksChunkHolder blocksChunkHolder)
       throws FilterUnsupportedException, IOException {
     long startTime = System.currentTimeMillis();
+    long start = System.currentTimeMillis();
     // apply filter on actual data
     BitSetGroup bitSetGroup = this.filterExecuter.applyFilter(blocksChunkHolder);
     // if indexes is empty then return with empty result
@@ -158,7 +162,9 @@ public class FilterScanner extends AbstractBlockletScanner {
           blocksChunkHolder.getMeasureRawDataChunk());
       return createEmptyResult();
     }
-
+    System.out.println("filterExecuter.applyFilter time: " + (System.currentTimeMillis() - start));
+    start = System.currentTimeMillis();
+    
     AbstractScannedResult scannedResult = new FilterQueryScannedResult(blockExecutionInfo);
     scannedResult.setBlockletId(
         blockExecutionInfo.getBlockId() + CarbonCommonConstants.FILE_SEPARATOR + blocksChunkHolder
@@ -196,6 +202,7 @@ public class FilterScanner extends AbstractBlockletScanner {
         indexesGroup[k] = indexes;
       }
     }
+
     // loading delete data cache in blockexecutioninfo instance
     DeleteDeltaCacheLoaderIntf deleteCacheLoader =
         new BlockletDeleteDeltaCacheLoader(scannedResult.getBlockletId(),
@@ -203,6 +210,8 @@ public class FilterScanner extends AbstractBlockletScanner {
     deleteCacheLoader.loadDeleteDeltaFileDataToCache();
     scannedResult
         .setBlockletDeleteDeltaCache(blocksChunkHolder.getDataBlock().getDeleteDeltaDataCache());
+    System.out.println("get index time: " + (System.currentTimeMillis() - start));
+    start = System.currentTimeMillis();
     FileHolder fileReader = blocksChunkHolder.getFileReader();
     int[][] allSelectedDimensionBlocksIndexes =
         blockExecutionInfo.getAllSelectedDimensionBlocksIndexes();
@@ -237,6 +246,7 @@ public class FilterScanner extends AbstractBlockletScanner {
                 .getDimensionChunk(fileReader, projectionListDimensionIndexes[i]);
       }
     }
+
     MeasureRawColumnChunk[] measureRawColumnChunks =
         new MeasureRawColumnChunk[blockExecutionInfo.getTotalNumberOfMeasureBlock()];
     int[][] allSelectedMeasureBlocksIndexes =
@@ -267,6 +277,9 @@ public class FilterScanner extends AbstractBlockletScanner {
             .getMeasureChunk(fileReader, projectionListMeasureIndexes[i]);
       }
     }
+    System.out.println("read dim and measure time: " + (System.currentTimeMillis() - start));
+    start = System.currentTimeMillis();
+
     DimensionColumnDataChunk[][] dimensionColumnDataChunks =
         new DimensionColumnDataChunk[dimensionRawColumnChunks.length][indexesGroup.length];
     MeasureColumnDataChunk[][] measureColumnDataChunks =
@@ -285,6 +298,8 @@ public class FilterScanner extends AbstractBlockletScanner {
         }
       }
     }
+    System.out.println("convertToColDataChunk time: " + (System.currentTimeMillis() - start));
+    start = System.currentTimeMillis();
     scannedResult.setDimensionChunks(dimensionColumnDataChunks);
     scannedResult.setIndexes(indexesGroup);
     scannedResult.setMeasureChunks(measureColumnDataChunks);

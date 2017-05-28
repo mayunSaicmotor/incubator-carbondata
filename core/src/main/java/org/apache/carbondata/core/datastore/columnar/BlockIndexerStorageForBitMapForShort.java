@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+import org.apache.carbondata.core.constants.CarbonCommonConstants;
 import org.apache.carbondata.core.util.ByteUtil;
 
 /**
@@ -44,8 +45,13 @@ public class BlockIndexerStorageForBitMapForShort implements IndexStorage<short[
   private Map<Integer, BitSet> dictMap;
   List<Integer> dictList;
   List<Integer> bitMapPagesOffsetList;
-
+  private short[] dataIndexMap;
   public BlockIndexerStorageForBitMapForShort(byte[][] keyBlockInput, boolean isNoDictionary) {
+    generateBitmapData(keyBlockInput);
+    compressDataMyOwnWay(keyBlock[0]);
+  }
+
+  private void generateBitmapData(byte[][] keyBlockInput) {
     dictMap = new TreeMap<Integer, BitSet>();
     min = keyBlockInput[0];
     max = keyBlockInput[0];
@@ -93,7 +99,7 @@ public class BlockIndexerStorageForBitMapForShort implements IndexStorage<short[
 
   @Override
   public short[] getDataIndexMap() {
-    return new short[0];
+    return dataIndexMap;
   }
 
   @Override
@@ -159,4 +165,99 @@ public class BlockIndexerStorageForBitMapForShort implements IndexStorage<short[
     this.bitMapPagesOffsetList = bitMapPagesLengthList;
   }
 
+  /**
+   * Create an object with each column array and respective index
+   *
+   * @return
+   */
+  private ColumnWithIntIndex[] createColumnWithIndexArray() {
+    ColumnWithIntIndex[] columnWithIndexs;
+    columnWithIndexs = new ColumnWithIntIndex[this.totalSize];
+    int cnt = 0;
+    for (short i = 0; i < 1; i++) {
+      for (short j = 0; j < keyBlock[i].length; j++) {
+        byte[] value = new byte[1];
+        value[0] = keyBlock[i][j];
+        columnWithIndexs[cnt] = new ColumnWithIntIndex(value, cnt);
+        cnt++;
+      }
+      
+    }
+
+    return columnWithIndexs;
+  }
+
+  private void compressDataMyOwnWay(byte[] indexes) {
+    byte[] prvKey = new byte[1];
+    prvKey[0]=indexes[0];
+    List<Byte> list = new ArrayList<Byte>(indexes.length / 2);
+    list.add(indexes[0]);
+    short counter = 1;
+    short start = 0;
+    List<Short> map = new ArrayList<Short>(CarbonCommonConstants.CONSTANT_SIZE_TEN);
+    for (int i = 1; i < indexes.length; i++) {
+      byte[] indexData = new byte[1];
+      indexData[0] = indexes[i];
+      if (ByteUtil.UnsafeComparer.INSTANCE.compareTo(prvKey, indexData) != 0) {
+        //prvKey = indexes[i].getColumn();
+        prvKey = new byte[1];
+        prvKey[0]=indexes[i];
+        list.add(indexes[i]);
+        map.add(start);
+        map.add(counter);
+        start += counter;
+        counter = 1;
+        continue;
+      }
+      counter++;
+    }
+    map.add(start);
+    map.add(counter);
+    // if rle is index size is more than 70% then rle wont give any benefit
+    // so better to avoid rle index and write data as it is
+    boolean useRle = (((list.size() + map.size()) * 100) / indexes.length) < 70;
+    if (useRle) {
+      this.keyBlock = convertToKeyArray(list);
+      dataIndexMap = convertToArray(map);
+    } else {
+      // this.keyBlock = convertToKeyArray(indexes);
+      dataIndexMap = new short[0];
+    }
+    // generateBitMapPagesOffsets();
+  }
+
+  private short[] convertToArray(List<Short> list) {
+    short[] shortArray = new short[list.size()];
+    for (int i = 0; i < shortArray.length; i++) {
+      shortArray[i] = list.get(i);
+    }
+    return shortArray;
+  }
+/*  private byte[][] convertToKeyArray(byte[] indexes) {
+    byte[][] shortArray = new byte[indexes.length][];
+    for (int i = 0; i < shortArray.length; i++) {
+      shortArray[i][0] = indexes[i];
+      totalSize += shortArray[i].length;
+    }
+    return shortArray;
+  }*/
+
+  private byte[][] convertToKeyArray(List<Byte> list) {
+    byte[] shortArray = new byte[list.size()];
+    for (int i = 0; i < shortArray.length; i++) {
+      shortArray[i] = list.get(i);
+      // totalSize += shortArray[i].length;
+    }
+    totalSize = totalSize + shortArray.length - keyBlock[0].length;
+    keyBlock[0] = shortArray; 
+    return keyBlock;
+  }
+
+//  private void generateBitMapPagesOffsets() {
+//    bitMapPagesOffsetList = new ArrayList<Integer>(dictMap.size());
+//    for (int i = 0; i < keyBlock.length; i++) {
+//      bitMapPagesOffsetList.add(totalSize);
+//      totalSize += keyBlock[i].length;
+//    }
+//  }
 }
