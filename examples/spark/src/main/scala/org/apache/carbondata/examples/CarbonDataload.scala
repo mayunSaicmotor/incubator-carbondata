@@ -21,25 +21,32 @@ import org.apache.carbondata.core.constants.CarbonCommonConstants
 import org.apache.carbondata.core.util.CarbonProperties
 import org.apache.carbondata.examples.util.ExampleUtils
 
-object CarbonBitMapEncodingExample {
+object CarbonDataLoad {
 
   def main(args: Array[String]) {
-    val cc = ExampleUtils.createCarbonContext("CarbonBitMapEncodingExample")
-    val testData = ExampleUtils.currentPath + "/src/main/resources/data.csv"
+    val cc = ExampleUtils.createCarbonContext("CarbonExample")
+    val testData = ExampleUtils.currentPath + "/src/main/resources/bitmaptest.csv"
 
     // Specify date format based on raw data
     CarbonProperties.getInstance()
       .addProperty(CarbonCommonConstants.CARBON_DATE_FORMAT, "yyyy/MM/dd")
 
-    cc.sql("DROP TABLE IF EXISTS t3")
-
     // Create BITMAP table, 6 dimensions, 2 measure
     cc.sql("""
            CREATE TABLE IF NOT EXISTS t3
-           (ID Int, date Date, country String,
-           name String, phonetype String, serialname char(10), salary Int)
+           (ID Int, country0 String, date Date, country String,
+           name String, phonetype String, country1 String, serialname char(10),
+           salary Int, country2 String)
            STORED BY 'carbondata'
-           TBLPROPERTIES ('BITMAP'='country')
+           TBLPROPERTIES ('BITMAP'='country,country0,country1,country2')
+           """)
+    // Load data
+    cc.sql(s"""
+           LOAD DATA LOCAL INPATH '$testData' into table t3
+           """)
+    // Load data
+    cc.sql(s"""
+           LOAD DATA LOCAL INPATH '$testData' into table t3
            """)
 
     // Load data
@@ -47,20 +54,7 @@ object CarbonBitMapEncodingExample {
            LOAD DATA LOCAL INPATH '$testData' into table t3
            """)
 
-    // Perform a query
-    cc.sql("""
-           SELECT date, country, count(salary) AS amount
-           FROM t3
-           WHERE country IN ('china','france') and name between 'aaa1' and 'aaa6'
-           GROUP BY date, country
-           """).show()
-    cc.sql("""
-           SELECT country, name, salary AS amount
-           FROM t3
-           WHERE country IN ('china','france') and name = 'aaa10'
-           """).show()
-    // Drop table
-    // cc.sql("DROP TABLE IF EXISTS t3")
+
   }
 
 }
