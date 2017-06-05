@@ -27,7 +27,7 @@ public class CreateBitMapData {
 
     try {
 
-      outSTr = new FileOutputStream(new File("bitmaptest.csv"));
+      outSTr = new FileOutputStream(new File("./src/main/resources/bitmaptest.csv"));
 
       Buff = new BufferedOutputStream(outSTr);
 
