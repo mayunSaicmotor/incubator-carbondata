@@ -157,13 +157,13 @@ public class UnsafeBitMapDimensionDataChunkStore
     assert (!isMemoryOccupied);
     this.dataLength = bitMapFilter.bitmap_data_pages_offset[1];
     // copy the data to memory
-    CarbonUnsafe.unsafe
-        .copyMemory(rawData, CarbonUnsafe.BYTE_ARRAY_OFFSET, dataPageMemoryBlock.getBaseObject(),
-            dataPageMemoryBlock.getBaseOffset(), this.dataLength);
-    this.bitMapFilter.bitMapData = new byte[rawData.length
+    CarbonUnsafe.unsafe.copyMemory(rawData, CarbonUnsafe.BYTE_ARRAY_OFFSET,
+        dataPageMemoryBlock.getBaseObject(), dataPageMemoryBlock.getBaseOffset(), this.dataLength);
+    bitMapFilter.data = rawData;
+/*    this.bitMapFilter.bitMapData = new byte[rawData.length
         - bitMapFilter.bitmap_data_pages_offset[1]];
     System.arraycopy(rawData, bitMapFilter.bitmap_data_pages_offset[1], bitMapFilter.bitMapData, 0,
-        bitMapFilter.bitMapData.length);
+        bitMapFilter.bitMapData.length);*/
 
   }
 
