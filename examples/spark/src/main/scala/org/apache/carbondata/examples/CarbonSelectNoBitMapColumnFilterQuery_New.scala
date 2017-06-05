@@ -23,8 +23,12 @@ import org.apache.carbondata.core.constants.CarbonCommonConstants
 import org.apache.carbondata.core.util.CarbonProperties
 import org.apache.carbondata.examples.util.ExampleUtils
 
-object CarbonSelectNoBitMapColumnFilterQuery {
+object CarbonSelectNoBitMapColumnFilterQuery_New {
   def main(args: Array[String]) {
+
+    CarbonSelectNoBitMapColumnFilterQuery_New.extracted("b3")
+  }
+  def extracted(tableName: String) = {
     val cc = ExampleUtils.createCarbonContext("CarbonBitMapFilterQueryExample")
     val testData = ExampleUtils.currentPath + "/src/main/resources/data.csv"
 
@@ -39,12 +43,12 @@ object CarbonSelectNoBitMapColumnFilterQuery {
       var timeCostMap = LinkedHashMap[String, Long]();
       var start: Long = System.currentTimeMillis()
       for (index <- 1 to 1) {
-        cc.sql("""
-           SELECT serialname, phonetype, salary, name, id
-           FROM t3
-           WHERE country2 <> 'china'
-           
-           """).show(10)
+        cc.sql(s"""
+             SELECT serialname, phonetype, salary, name, id
+             FROM $tableName
+             WHERE country2 <> 'china'
+             
+             """).show(10)
       }
       timeCostMap += ("country2 <> 'china': "
         -> new java.lang.Long(System.currentTimeMillis() - start))
@@ -52,12 +56,12 @@ object CarbonSelectNoBitMapColumnFilterQuery {
 
       start = System.currentTimeMillis()
       for (index <- 1 to 1) {
-        cc.sql("""
-           SELECT serialname, phonetype, salary, name, id
-           FROM t3
-           WHERE country2 = 'china'
-           
-           """).show(10)
+        cc.sql(s"""
+             SELECT serialname, phonetype, salary, name, id
+             FROM $tableName
+             WHERE country2 = 'china'
+             
+             """).show(10)
       }
       timeCostMap += ("country2 = 'china': "
         -> new java.lang.Long(System.currentTimeMillis() - start))
@@ -65,12 +69,12 @@ object CarbonSelectNoBitMapColumnFilterQuery {
 
       start = System.currentTimeMillis()
       for (index <- 1 to 1) {
-        cc.sql("""
-           SELECT serialname, phonetype, salary, name, id
-           FROM t3
-           WHERE country2 <> 'france'
-           
-           """).show(10)
+        cc.sql(s"""
+             SELECT serialname, phonetype, salary, name, id
+             FROM $tableName
+             WHERE country2 <> 'france'
+             
+             """).show(10)
       }
       timeCostMap += ("country2 <> 'france' query time: "
         -> new java.lang.Long(System.currentTimeMillis() - start))
@@ -78,24 +82,24 @@ object CarbonSelectNoBitMapColumnFilterQuery {
 
       start = System.currentTimeMillis()
       for (index <- 1 to 1) {
-        cc.sql("""
-           SELECT serialname, phonetype, salary, name, id
-           FROM t3
-           WHERE country2 = 'france'
-           
-           """).show(10)
+        cc.sql(s"""
+             SELECT serialname, phonetype, salary, name, id
+             FROM $tableName
+             WHERE country2 = 'france'
+             
+             """).show(10)
       }
       timeCostMap += ("country2 = 'france' query time: "
         -> new java.lang.Long(System.currentTimeMillis() - start))
       println("country2 = 'france' query time: " + (System.currentTimeMillis() - start))
       start = System.currentTimeMillis()
       for (index <- 1 to 1) {
-        cc.sql("""
-           SELECT serialname, phonetype, salary, name, id
-           FROM t3
-           WHERE country2 IN ('france')
-           
-           """).show(10)
+        cc.sql(s"""
+             SELECT serialname, phonetype, salary, name, id
+             FROM $tableName
+             WHERE country2 IN ('france')
+             
+             """).show(10)
       }
       timeCostMap += ("country2 IN ('france') query time: "
         -> new java.lang.Long(System.currentTimeMillis() - start))
@@ -103,13 +107,13 @@ object CarbonSelectNoBitMapColumnFilterQuery {
 
       start = System.currentTimeMillis()
       for (index <- 1 to 1) {
-        cc.sql("""
-           SELECT serialname, phonetype, salary, name, id
-           FROM t3
-           WHERE country2 <> 'china' and country2 <> 'canada' and country2 <> 'indian'
-           and country2 <> 'uk'
-           
-           """).show(10)
+        cc.sql(s"""
+             SELECT serialname, phonetype, salary, name, id
+             FROM $tableName
+             WHERE country2 <> 'china' and country2 <> 'canada' and country2 <> 'indian'
+             and country2 <> 'uk'
+             
+             """).show(10)
       }
       timeCostMap += ("country2 <> 'china' and country2 <> 'canada' and country2 <> 'indian'"
         + "and country2 <> 'uk' query time query time: "
@@ -119,12 +123,12 @@ object CarbonSelectNoBitMapColumnFilterQuery {
         + (System.currentTimeMillis() - start))
       start = System.currentTimeMillis()
       for (index <- 1 to 1) {
-        cc.sql("""
-           SELECT serialname, phonetype, salary, name, id
-           FROM t3
-           WHERE country2 not in ('china','canada','indian','usa','uk')
-           
-           """).show(10)
+        cc.sql(s"""
+             SELECT serialname, phonetype, salary, name, id
+             FROM $tableName
+             WHERE country2 not in ('china','canada','indian','usa','uk')
+             
+             """).show(10)
       }
       timeCostMap += ("country2 not in ('china','canada','indian','usa','uk') query time: "
         -> new java.lang.Long(System.currentTimeMillis() - start))
@@ -133,12 +137,12 @@ object CarbonSelectNoBitMapColumnFilterQuery {
 
       start = System.currentTimeMillis()
       for (index <- 1 to 1) {
-        cc.sql("""
-           SELECT serialname, phonetype, salary, name, id
-           FROM t3
-           WHERE country2 IN ('china','usa','uk')
-           
-           """).show(10)
+        cc.sql(s"""
+             SELECT serialname, phonetype, salary, name, id
+             FROM $tableName
+             WHERE country2 IN ('china','usa','uk')
+             
+             """).show(10)
       }
       timeCostMap += ("country2 IN ('china','usa','uk') query time: "
         -> new java.lang.Long(System.currentTimeMillis() - start))
@@ -146,12 +150,12 @@ object CarbonSelectNoBitMapColumnFilterQuery {
 
       start = System.currentTimeMillis()
       for (index <- 1 to 1) {
-        cc.sql("""
-           SELECT serialname, phonetype, salary, name, id
-           FROM t3
-           WHERE country2 = 'china' or country2 = 'indian' or country2 = 'usa'
-           
-           """).show(10)
+        cc.sql(s"""
+             SELECT serialname, phonetype, salary, name, id
+             FROM $tableName
+             WHERE country2 = 'china' or country2 = 'indian' or country2 = 'usa'
+             
+             """).show(10)
       }
       timeCostMap += ("country2 = 'china' or country2 = 'indian' or country2 = 'usa' query time: "
         -> new java.lang.Long(System.currentTimeMillis() - start))
@@ -160,12 +164,12 @@ object CarbonSelectNoBitMapColumnFilterQuery {
 
       start = System.currentTimeMillis()
       for (index <- 1 to 1) {
-        cc.sql("""
-           SELECT serialname, phonetype, salary, name, id
-           FROM t3
-           WHERE country2 between 'china' and 'indian'
-           
-           """).show(10)
+        cc.sql(s"""
+             SELECT serialname, phonetype, salary, name, id
+             FROM $tableName
+             WHERE country2 between 'china' and 'indian'
+             
+             """).show(10)
       }
       timeCostMap += ("country2 between 'china' and 'indian' query time: "
         -> new java.lang.Long(System.currentTimeMillis() - start))
@@ -175,7 +179,7 @@ object CarbonSelectNoBitMapColumnFilterQuery {
       timeCostSeq = timeCostSeq :+ timeCostMap
     }
     // Drop table
-    // cc.sql("DROP TABLE IF EXISTS t3")
+    // cc.sql("DROP TABLE IF EXISTS $tableName")
 
     // use to get statistical information
     for (timeCostMap <- timeCostSeq) {
@@ -184,6 +188,5 @@ object CarbonSelectNoBitMapColumnFilterQuery {
       }
       println()
     }
-    // scalastyle:on println
   }
 }

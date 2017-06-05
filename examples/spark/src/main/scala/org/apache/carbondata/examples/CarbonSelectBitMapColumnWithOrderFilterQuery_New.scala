@@ -23,8 +23,13 @@ import org.apache.carbondata.core.constants.CarbonCommonConstants
 import org.apache.carbondata.core.util.CarbonProperties
 import org.apache.carbondata.examples.util.ExampleUtils
 
-object CarbonSelectBitMapColumnWithOrderFilterQuery {
+object CarbonSelectBitMapColumnWithOrderFilterQuery_New {
+
   def main(args: Array[String]) {
+
+    CarbonSelectBitMapColumnWithOrderFilterQuery_New.extracted("b3")
+  }
+  def extracted(tableName: String) = {
     val cc = ExampleUtils.createCarbonContext("CarbonBitMapFilterQueryExample")
     val testData = ExampleUtils.currentPath + "/src/main/resources/data.csv"
 
@@ -32,52 +37,51 @@ object CarbonSelectBitMapColumnWithOrderFilterQuery {
     CarbonProperties.getInstance()
       .addProperty(CarbonCommonConstants.CARBON_TIMESTAMP_FORMAT, "yyyy/MM/dd")
 
-    /*    cc.sql("DROP TABLE IF EXISTS t3")
+    /*    cc.sql("DROP TABLE IF EXISTS $tableName")
 
-    // Create table, 6 dimensions, 2 measure
-    cc.sql("""
-           CREATE TABLE IF NOT EXISTS t3
-           (ID Int, date Date, country2 String,
-           name String, phonetype String, serialname char(10), salary Int)
-           STORED BY 'carbondata'
-           TBLPROPERTIES ('BITMAP'='country2')
-           """)
-    // Load data
-    cc.sql(s"""
-           LOAD DATA LOCAL INPATH '$testData' into table t3
-           """)
+      // Create table, 6 dimensions, 2 measure
+      cc.sql(s"""
+             CREATE TABLE IF NOT EXISTS $tableName
+             (ID Int, date Date, country2 String,
+             name String, phonetype String, serialname char(10), salary Int)
+             STORED BY 'carbondata'
+             TBLPROPERTIES ('BITMAP'='country2')
+             """)
+      // Load data
+      cc.sql(s"""
+             LOAD DATA LOCAL INPATH '$testData' into table $tableName
+             """)
 */
 
-
-//    cc.sql("""
-//           SELECT count(*)
-//           FROM t3
-//           """).show(10)
+    //    cc.sql(s"""
+    //           SELECT count(*)
+    //           FROM $tableName
+    //           """).show(10)
 
     // scalastyle:off println
     var maxTestTimes = 3
-    var timeCostSeq =Seq[LinkedHashMap[String, Long]]()
+    var timeCostSeq = Seq[LinkedHashMap[String, Long]]()
     for (testNo <- 1 to maxTestTimes) {
       var timeCostMap = LinkedHashMap[String, Long]();
       var start = System.currentTimeMillis()
-      cc.sql("""
-           SELECT country2, serialname, phonetype, salary, name, id
-           FROM t3
-           WHERE country2 <> 'korea'
-           order by country2 limit 10
-           """).show(10)
+      cc.sql(s"""
+             SELECT country2, serialname, phonetype, salary, name, id
+             FROM $tableName
+             WHERE country2 <> 'korea'
+             order by country2 limit 10
+             """).show(10)
 
       timeCostMap += ("country2 <> 'korea': "
         -> new java.lang.Long(System.currentTimeMillis() - start))
       println("country2 <> 'korea': " + (System.currentTimeMillis() - start))
       start = System.currentTimeMillis()
 
-      cc.sql("""
-           SELECT country2, serialname, phonetype, salary, name, id
-           FROM t3
-           WHERE country2 = 'korea'
-           order by country2 limit 10
-           """).show(10)
+      cc.sql(s"""
+             SELECT country2, serialname, phonetype, salary, name, id
+             FROM $tableName
+             WHERE country2 = 'korea'
+             order by country2 limit 10
+             """).show(10)
 
       timeCostMap += ("country2 = 'korea': "
         -> new java.lang.Long(System.currentTimeMillis() - start))
@@ -85,25 +89,25 @@ object CarbonSelectBitMapColumnWithOrderFilterQuery {
 
       start = System.currentTimeMillis()
 
-      cc.sql("""
-           SELECT country2, serialname, phonetype, salary, name, id
-           FROM t3
-           WHERE country2 in ('korea', 'china', 'usa', 'uk')
-           order by country2 limit 10
-           """).show(10)
+      cc.sql(s"""
+             SELECT country2, serialname, phonetype, salary, name, id
+             FROM $tableName
+             WHERE country2 in ('korea', 'china', 'usa', 'uk')
+             order by country2 limit 10
+             """).show(10)
 
       timeCostMap += ("country2 in ('korea', 'china', 'usa', 'uk'): "
         -> new java.lang.Long(System.currentTimeMillis() - start))
       println("country2 in ('korea', 'china', 'usa', 'uk'): " + (System.currentTimeMillis() - start))
-      
+
       start = System.currentTimeMillis()
 
-      cc.sql("""
-           SELECT country2, serialname, phonetype, salary, name, id
-           FROM t3
-           WHERE country2 not in ('korea', 'china', 'usa', 'uk')
-           order by country2 limit 10
-           """).show(10)
+      cc.sql(s"""
+             SELECT country2, serialname, phonetype, salary, name, id
+             FROM $tableName
+             WHERE country2 not in ('korea', 'china', 'usa', 'uk')
+             order by country2 limit 10
+             """).show(10)
 
       timeCostMap += ("country2 not in ('korea', 'china', 'usa', 'uk'): "
         -> new java.lang.Long(System.currentTimeMillis() - start))
@@ -111,7 +115,7 @@ object CarbonSelectBitMapColumnWithOrderFilterQuery {
       timeCostSeq = timeCostSeq :+ timeCostMap
     }
     // Drop table
-    // cc.sql("DROP TABLE IF EXISTS t3")
+    // cc.sql("DROP TABLE IF EXISTS $tableName")
 
     // use to get statistical information
     for (timeCostMap <- timeCostSeq) {
@@ -120,6 +124,5 @@ object CarbonSelectBitMapColumnWithOrderFilterQuery {
       }
       println()
     }
-    // scalastyle:on println
   }
 }
