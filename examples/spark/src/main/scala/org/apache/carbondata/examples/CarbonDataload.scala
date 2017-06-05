@@ -44,16 +44,10 @@ object CarbonDataLoad {
     cc.sql(s"""
            LOAD DATA LOCAL INPATH '$testData' into table t3
            """)
-    // Load data
-    cc.sql(s"""
-           LOAD DATA LOCAL INPATH '$testData' into table t3
-           """)
-
-    // Load data
-    cc.sql(s"""
-           LOAD DATA LOCAL INPATH '$testData' into table t3
-           """)
-
+    cc.sql("""
+     SELECT count(*)
+     FROM t3
+     """).show(10)
 
   }
 
