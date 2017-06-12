@@ -37,7 +37,6 @@ public class SafeBitMapDimensionDataChunkStore extends SafeAbsractDimensionDataC
     public byte[] data;
 
     public BitMapDataFilter() {
-     
     }
     
     /**
