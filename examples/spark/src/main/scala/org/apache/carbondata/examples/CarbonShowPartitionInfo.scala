@@ -17,77 +17,46 @@
 
 package org.apache.carbondata.examples
 
-import java.io.File
-
-import org.apache.spark.sql.SparkSession
+import scala.collection.mutable.LinkedHashMap
 
 import org.apache.carbondata.core.constants.CarbonCommonConstants
 import org.apache.carbondata.core.util.CarbonProperties
+import org.apache.carbondata.examples.util.ExampleUtils
 
-object CarbonPartitionExample {
-
+object CarbonShowPartitionInfo {
   def main(args: Array[String]) {
-    val rootPath = new File(this.getClass.getResource("/").getPath
-                            + "../../../..").getCanonicalPath
-    val storeLocation = s"$rootPath/examples/spark2/target/store"
-    val warehouse = s"$rootPath/examples/spark2/target/warehouse"
-    val metastoredb = s"$rootPath/examples/spark2/target"
-    val testData = s"$rootPath/examples/spark2/src/main/resources/partition_data.csv"
 
-    CarbonProperties.getInstance()
-      .addProperty(CarbonCommonConstants.CARBON_TIMESTAMP_FORMAT, "yyyy/MM/dd")
-
-    import org.apache.spark.sql.CarbonSession._
-
-    val spark = SparkSession
-      .builder()
-      .master("local")
-      .appName("CarbonPartitionExample")
-      .config("spark.sql.warehouse.dir", warehouse)
-      .getOrCreateCarbonSession(storeLocation, metastoredb)
-
-    spark.sparkContext.setLogLevel("WARN")
-
-    // none partition table
-    spark.sql("DROP TABLE IF EXISTS t0")
-
-    spark.sql("""
-                | CREATE TABLE IF NOT EXISTS t0
-                | (
-                | vin String,
-                | logdate Timestamp,
-                | phonenumber Long,
-                | country String,
-                | area String
-                | )
-                | STORED BY 'carbondata'
-              """.stripMargin)
+    CarbonShowPartitionInfo.extracted("t3", args)
+  }
+  def extracted(tableName: String, args: Array[String]): Unit = {
+    val cc = ExampleUtils.createCarbonContext("CarbonShowPartitionInfo")
+    val testData = ExampleUtils.currentPath + "/src/main/resources/data.csv"
 
     // range partition
-    spark.sql("DROP TABLE IF EXISTS t1")
+    cc.sql("DROP TABLE IF EXISTS t1")
 
-    spark.sql("""
+    cc.sql("""
                 | CREATE TABLE IF NOT EXISTS t1
                 | (
                 | vin String,
-                | phonenumber Long,
+                | phonenumber Int,
                 | country String,
                 | area String
                 | )
                 | PARTITIONED BY (logdate Timestamp)
                 | STORED BY 'carbondata'
                 | TBLPROPERTIES('PARTITION_TYPE'='RANGE',
-                | 'RANGE_INFO'='20140101, 2015/01/01 ,2016-01-01, ')
+                | 'RANGE_INFO'='20140101, 2015/01/01 ,2016-01-01')
               """.stripMargin)
+    cc.sql(s"""
+      SHOW PARTITIONS t1
+             """).show()
 
-    // hash partition
-    spark.sql("DROP TABLE IF EXISTS t3")
-
-    spark.sql("""
+    cc.sql("""
                 | CREATE TABLE IF NOT EXISTS t3
                 | (
                 | logdate Timestamp,
-                | phonenumber Long,
+                | phonenumber Int,
                 | country String,
                 | area String
                 | )
@@ -95,16 +64,18 @@ object CarbonPartitionExample {
                 | STORED BY 'carbondata'
                 | TBLPROPERTIES('PARTITION_TYPE'='HASH','NUM_PARTITIONS'='5')
                 """.stripMargin)
-
+    cc.sql(s"""
+      SHOW PARTITIONS t3
+             """).show()
     // list partition
-    spark.sql("DROP TABLE IF EXISTS t5")
+    cc.sql("DROP TABLE IF EXISTS t5")
 
-    spark.sql("""
+    cc.sql("""
        | CREATE TABLE IF NOT EXISTS t5
        | (
        | vin String,
        | logdate Timestamp,
-       | phonenumber Long,
+       | phonenumber Int,
        | area String
        |)
        | PARTITIONED BY (country string)
@@ -112,17 +83,32 @@ object CarbonPartitionExample {
        | TBLPROPERTIES('PARTITION_TYPE'='LIST',
        | 'LIST_INFO'='(China,United States),UK ,japan,(Canada,Russia), South Korea ')
        """.stripMargin)
+    cc.sql(s"""
+      SHOW PARTITIONS t5
+             """).show()
 
-    // spark.sql(s"""
-    //   LOAD DATA LOCAL INPATH '$testData' into table t3
-    // options('BAD_RECORDS_ACTION'='FORCE')
-    //   """)
+    cc.sql(s"DROP TABLE IF EXISTS partitionDB.$tableName")
+    cc.sql(s"DROP DATABASE IF EXISTS partitionDB")
+    cc.sql(s"CREATE DATABASE partitionDB")
+    cc.sql(s"""
+                | CREATE TABLE IF NOT EXISTS partitionDB.$tableName
+                | (
+                | logdate Timestamp,
+                | phonenumber Int,
+                | country String,
+                | area String
+                | )
+                | PARTITIONED BY (vin String)
+                | STORED BY 'carbondata'
+                | TBLPROPERTIES('PARTITION_TYPE'='HASH','NUM_PARTITIONS'='5')
+                """.stripMargin)
+    cc.sql(s"""
+      SHOW PARTITIONS partitionDB.$tableName
+             """).show()
 
-    // spark.sql("select vin, count(*) from t3 group by vin
-    // order by count(*) desc").show(50)
+    cc.sql(s"""
+      SHOW PARTITIONS $tableName
+             """).show()
 
-    // Drop table
-    // spark.sql("DROP TABLE IF EXISTS t3")
   }
-
 }
