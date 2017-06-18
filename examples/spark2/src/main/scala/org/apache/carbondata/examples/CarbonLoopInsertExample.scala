@@ -45,7 +45,7 @@ object CarbonLoopInsertExample {
 
     spark.sparkContext.setLogLevel("WARN")
     spark.sql(s"""
-             SELECT ID,date,name,phonetype,serialname,salary,country2
+             SELECT ID,date,name,phonetype,serialname,salary,country
              FROM $tableName
              where id between 4000001 and 4000031
              """).show(10000)
@@ -87,7 +87,7 @@ object CarbonLoopInsertExample {
 
       startItem = System.currentTimeMillis()
       spark.sql(s"""
-             SELECT ID,date,name,phonetype,serialname,salary,country2
+             SELECT ID,date,name,phonetype,serialname,salary,country
              FROM $tableName
              WHERE name = '$testName'
              """).show(100)
@@ -99,7 +99,7 @@ object CarbonLoopInsertExample {
     }
     println("delete time: " + (System.currentTimeMillis() - start))
     spark.sql(s"""
-             SELECT ID,date,name,phonetype,serialname,salary,country2
+             SELECT ID,date,name,phonetype,serialname,salary,country
              FROM $tableName
              where id between 4000001 and 4000031
              """).show(10000)

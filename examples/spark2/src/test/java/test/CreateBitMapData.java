@@ -32,10 +32,9 @@ public class CreateBitMapData {
       Buff = new BufferedOutputStream(outSTr);
 
       long begin0 = System.currentTimeMillis();
-      Buff.write("ID,country0,date,country,name,phonetype,country1,serialname,salary,country2\n"
-          .getBytes());
+      Buff.write("ID,date,name,phonetype,serialname,salary,country\n".getBytes());
 
-      int idcount = 10000000;
+      int idcount = 2000000;
       if (args != null && args.length > 0 && args[0] != null) {
         idcount = Integer.valueOf(args[0]);
       }
@@ -46,9 +45,15 @@ public class CreateBitMapData {
       int serialnamecount = 50000;
       // int salarycount = 200000;
       Map<Integer, String> countryMap = new HashMap<Integer, String>();
-      countryMap.put(0, "usa");
-      countryMap.put(1, "china");
-      countryMap.put(2, "russia");
+      countryMap.put(1, "usa");
+      countryMap.put(2, "uk");
+      countryMap.put(3, "china");
+      countryMap.put(4, "indian");
+      countryMap.put(5, "japan");
+      countryMap.put(6, "korea");
+      countryMap.put(7, "russia");
+      countryMap.put(8, "poland");
+      countryMap.put(0, "canada");
 
       StringBuilder sb = null;
       int id;
@@ -57,16 +62,19 @@ public class CreateBitMapData {
         sb = new StringBuilder();
         id = 4000000 + i;
         sb.append(id).append(",");// id
-        sb.append(i == 1 ? "france" : countryMap.get((i + 1) % countrycount)).append(",");
+        // sb.append(i==1 ? "france" : countryMap.get((i+1) %
+        // countrycount)).append(",");
         sb.append("2015/8/" + (i % datecount + 1)).append(",");
-        sb.append(i == 1 ? "france" : countryMap.get(i % countrycount)).append(",");
+        // sb.append(i==1 ? "france" : countryMap.get(i %
+        // countrycount)).append(",");
         sb.append("name" + (1600000 + i)).append(",");// name
         sb.append("phone" + i % phonetypecount).append(",");
-        sb.append(i == 1 ? "france" : countryMap.get((i + 2) % countrycount)).append(",");
+        // sb.append(i==1 ? "france" : countryMap.get((i+2) %
+        // countrycount)).append(",");
         sb.append("serialname" + (100000 + i % serialnamecount)).append(",");// serialname
         sb.append(i + 500000).append(',');
-        sb.append(i == 1 ? "france" : countryMap.get((i + 3) % countrycount)).append('\n');
-        ;
+        sb.append(i == 1 || i == 2 ? "france" : countryMap.get((i + 3) % countrycount))
+            .append('\n');
         // sb.append("name1" + (i + 100000)).append(",");// name
         // sb.append("name2" + (i + 200000)).append(",");// name
         // sb.append("name3" + (i + 300000)).append(",");// name

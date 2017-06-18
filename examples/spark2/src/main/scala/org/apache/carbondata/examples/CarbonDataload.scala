@@ -32,7 +32,7 @@ object CarbonDataLoad {
     val storeLocation = s"$rootPath/examples/spark2/target/store"
     val warehouse = s"$rootPath/examples/spark2/target/warehouse"
     val metastoredb = s"$rootPath/examples/spark2/target"
-    val testData = s"$rootPath/examples/spark2/src/main/resources/bitmaptest2.csv"
+    val testData = s"$rootPath/examples/spark2/src/main/resources/bitmaptest.csv"
     import org.apache.spark.sql.CarbonSession._
     val spark = SparkSession
       .builder()

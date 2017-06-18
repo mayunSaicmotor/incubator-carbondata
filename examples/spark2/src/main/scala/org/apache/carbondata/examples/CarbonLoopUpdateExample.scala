@@ -45,17 +45,17 @@ object CarbonLoopUpdateExample {
 
     spark.sparkContext.setLogLevel("WARN")
     spark.sql(s"""
-             SELECT ID,date,name,phonetype,serialname,salary,country2
+             SELECT ID,date,name,phonetype,serialname,salary,country
              FROM $tableName
              where id = 4000025
              """).show(10000)
     spark.sql(s"""
-             SELECT ID,date,name,phonetype,serialname,salary,country2
+             SELECT ID,date,name,phonetype,serialname,salary,country
              FROM $tableName
              where id = 4000029
              """).show(10000)
     spark.sql(s"""
-             SELECT ID,date,name,phonetype,serialname,salary,country2
+             SELECT ID,date,name,phonetype,serialname,salary,country
              FROM $tableName
              where id between 4000001 and 4000031
              """).show(10000)
@@ -91,7 +91,7 @@ object CarbonLoopUpdateExample {
 
       startItem = System.currentTimeMillis()
       spark.sql(s"""
-             SELECT ID,date,name,phonetype,serialname,salary,country2
+             SELECT ID,date,name,phonetype,serialname,salary,country
              FROM $tableName
              WHERE name = 'carbon_name'
              """).show(100)
@@ -104,7 +104,7 @@ object CarbonLoopUpdateExample {
     println("update time: " + (System.currentTimeMillis() - start))
     start = System.currentTimeMillis()
     spark.sql(s"""
-             SELECT ID,date,name,phonetype,serialname,salary,country2
+             SELECT ID,date,name,phonetype,serialname,salary,country
              FROM $tableName
              WHERE name = 'carbon_name'
              """).show(100)
@@ -126,17 +126,17 @@ object CarbonLoopUpdateExample {
     }
 
     spark.sql(s"""
-             SELECT ID,date,name,phonetype,serialname,salary,country2
+             SELECT ID,date,name,phonetype,serialname,salary,country
              FROM $tableName
              where id = 4000025
              """).show(10000)
     spark.sql(s"""
-             SELECT ID,date,name,phonetype,serialname,salary,country2
+             SELECT ID,date,name,phonetype,serialname,salary,country
              FROM $tableName
              where id = 4000029
              """).show(10000)
     spark.sql(s"""
-             SELECT ID,date,name,phonetype,serialname,salary,country2
+             SELECT ID,date,name,phonetype,serialname,salary,country
              FROM $tableName
              where id between 4000001 and 4000031
              """).show(10000)
