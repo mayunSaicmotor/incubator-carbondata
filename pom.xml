@@ -35,7 +35,7 @@
   <inceptionYear>2016</inceptionYear>
   <packaging>pom</packaging>
 
-  <version>1.1.1-SNAPSHOT</version>
+  <version>1.1.1</version>
 
   <licenses>
     <license>
@@ -357,6 +357,9 @@
     </profile>
     <profile>
       <id>spark-2.1</id>
+            <activation>
+        <activeByDefault>false</activeByDefault>
+      </activation>
       <properties>
         <spark.version>2.1.0</spark.version>
         <scala.binary.version>2.11</scala.binary.version>
