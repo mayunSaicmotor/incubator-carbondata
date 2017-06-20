@@ -47,17 +47,8 @@ object CarbonLoopUpdateExample {
     spark.sql(s"""
              SELECT ID,date,name,phonetype,serialname,salary,country
              FROM $tableName
-             where id = 4000025
-             """).show(10000)
-    spark.sql(s"""
-             SELECT ID,date,name,phonetype,serialname,salary,country
-             FROM $tableName
-             where id = 4000029
-             """).show(10000)
-    spark.sql(s"""
-             SELECT ID,date,name,phonetype,serialname,salary,country
-             FROM $tableName
              where id between 4000001 and 4000031
+             order by id
              """).show(10000)
 
     spark.sql(s"""
@@ -94,6 +85,7 @@ object CarbonLoopUpdateExample {
              SELECT ID,date,name,phonetype,serialname,salary,country
              FROM $tableName
              WHERE name = 'carbon_name'
+             order by ID
              """).show(100)
       timeCostMap += ("select updated data time "
         -> new java.lang.Long(System.currentTimeMillis() - startItem))
@@ -107,6 +99,7 @@ object CarbonLoopUpdateExample {
              SELECT ID,date,name,phonetype,serialname,salary,country
              FROM $tableName
              WHERE name = 'carbon_name'
+             order by ID
              """).show(100)
     println("select time: " + (System.currentTimeMillis() - start))
     start = System.currentTimeMillis()
@@ -123,21 +116,11 @@ object CarbonLoopUpdateExample {
       }
       println()
     }
-
-    spark.sql(s"""
-             SELECT ID,date,name,phonetype,serialname,salary,country
-             FROM $tableName
-             where id = 4000025
-             """).show(10000)
-    spark.sql(s"""
-             SELECT ID,date,name,phonetype,serialname,salary,country
-             FROM $tableName
-             where id = 4000029
-             """).show(10000)
     spark.sql(s"""
              SELECT ID,date,name,phonetype,serialname,salary,country
              FROM $tableName
              where id between 4000001 and 4000031
+             order by id
              """).show(10000)
 
     spark.sql(s"""

@@ -78,12 +78,12 @@ object CarbonLoopInsertExample {
       println("testName: " + testName)
       startItem = System.currentTimeMillis()
       spark.sql(s"""
-             insert into $tableName select $id,'$date','$testName'
-             ,'$phoneType','$serialname',$salary,'$country'
+             insert into $tableName select $id,'$date','$country','$testName'
+             ,'$phoneType','$serialname',$salary
              """).show()
-      timeCostMap += ("single update time: "
+      timeCostMap += ("single insert time: "
         -> new java.lang.Long(System.currentTimeMillis() - startItem))
-      println("single delete time: " + (System.currentTimeMillis() - startItem))
+      println("single insert time: " + (System.currentTimeMillis() - startItem))
 
       startItem = System.currentTimeMillis()
       spark.sql(s"""
@@ -91,13 +91,13 @@ object CarbonLoopInsertExample {
              FROM $tableName
              WHERE name = '$testName'
              """).show(100)
-      timeCostMap += ("select deleted data time "
+      timeCostMap += ("select inserted data time "
         -> new java.lang.Long(System.currentTimeMillis() - startItem))
-      println("select deleted data time: " + (System.currentTimeMillis() - startItem))
+      println("select inserted data time: " + (System.currentTimeMillis() - startItem))
 
       timeCostSeq = timeCostSeq :+ timeCostMap
     }
-    println("delete time: " + (System.currentTimeMillis() - start))
+    println("insert time: " + (System.currentTimeMillis() - start))
     spark.sql(s"""
              SELECT ID,date,name,phonetype,serialname,salary,country
              FROM $tableName

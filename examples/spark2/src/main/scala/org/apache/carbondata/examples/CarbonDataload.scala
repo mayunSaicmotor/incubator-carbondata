@@ -45,15 +45,11 @@ object CarbonDataLoad {
     spark.sql("DROP TABLE IF EXISTS t3")
 
     spark.sql("""
-                | CREATE TABLE IF NOT EXISTS t3
-                | (
-                | ID Int, date Date, name String, phonetype String,
-                | serialname char(10),salary Int
-                | )
-                | PARTITIONED BY (country String)
-                | STORED BY 'carbondata'
-                | TBLPROPERTIES('PARTITION_TYPE'='HASH','NUM_PARTITIONS'='5')
-                """.stripMargin)
+           CREATE TABLE IF NOT EXISTS t3
+           (ID Int, date Date, country String,
+           name String, phonetype String, serialname char(10), salary Int)
+           STORED BY 'carbondata'
+           """)
 
     // Load data
     spark.sql(s"""

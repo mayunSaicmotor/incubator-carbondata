@@ -87,8 +87,8 @@ object CarbonLoopFirstDeleteThenInsertExample {
 
       startTime = System.currentTimeMillis()
       spark.sql(s"""
-             insert into $tableName select $id,'$date','$testName'
-             ,'$phoneType','$serialname',$salary,'$country'
+             insert into $tableName select $id,'$date','$country','$testName'
+             ,'$phoneType','$serialname',$salary
              """).show()
       timeCostMap += ("select insert data time "
         -> new java.lang.Long(System.currentTimeMillis() - startTime))

@@ -17,8 +17,6 @@
 
 package org.apache.carbondata.examples
 
-
-
 import scala.collection.mutable.LinkedHashMap
 
 import org.apache.carbondata.examples.util.ExampleUtils
@@ -36,6 +34,7 @@ object CarbonLoopDeleteExample {
              SELECT ID,date,name,phonetype,serialname,salary,country
              FROM $tableName
              where id between 4000001 and 4000031
+             order by ID
              """).show(10000)
 
     spark.sql(s"""
@@ -92,6 +91,7 @@ object CarbonLoopDeleteExample {
              SELECT ID,date,name,phonetype,serialname,salary,country
              FROM $tableName
              where id between 4000001 and 4000031
+             order by ID
              """).show(10000)
     spark.sql(s"""
              SELECT count(*)
