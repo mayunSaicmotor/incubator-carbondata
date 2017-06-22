@@ -67,7 +67,7 @@ object CarbonLoopInsertExample {
       startItem = System.currentTimeMillis()
       spark.sql(s"""
              insert into $tableName select $id,'$date','$country','$testName'
-             ,'$phoneType','$serialname',$salary
+             ,'$phoneType','$serialname',$salary from $tableName
              """).show()
       timeCostMap += ("single insert time: "
         -> new java.lang.Long(System.currentTimeMillis() - startItem))
