@@ -83,11 +83,12 @@ public abstract class AbstractDetailQueryResultIterator<E> extends CarbonIterato
   /**
    * number of cores which can be used
    */
-  private int batchSize;
+  protected int batchSize;
+
   /**
    * queryStatisticsModel to store query statistics object
    */
-  private QueryStatisticsModel queryStatisticsModel;
+  protected QueryStatisticsModel queryStatisticsModel;
 
   public AbstractDetailQueryResultIterator(List<BlockExecutionInfo> infos, QueryModel queryModel,
       ExecutorService execService) {
@@ -103,6 +104,7 @@ public abstract class AbstractDetailQueryResultIterator<E> extends CarbonIterato
     } else {
       batchSize = CarbonCommonConstants.DETAIL_QUERY_BATCH_SIZE_DEFAULT;
     }
+    this.queryModel = queryModel;
     this.recorder = queryModel.getStatisticsRecorder();
     this.blockExecutionInfos = infos;
     this.fileReader = FileFactory.getFileHolder(
@@ -113,7 +115,7 @@ public abstract class AbstractDetailQueryResultIterator<E> extends CarbonIterato
     initQueryStatiticsModel();
   }
 
-  private void intialiseInfos() {
+  protected void intialiseInfos() {
     for (BlockExecutionInfo blockInfo : blockExecutionInfos) {
       Map<String, DeleteDeltaVo> deletedRowsMap = null;
       DataRefNodeFinder finder = new BTreeDataRefNodeFinder(blockInfo.getEachColumnValueSize(),
@@ -252,8 +254,7 @@ public abstract class AbstractDetailQueryResultIterator<E> extends CarbonIterato
     if (blockExecutionInfos.size() > 0) {
       BlockExecutionInfo executionInfo = blockExecutionInfos.get(0);
       blockExecutionInfos.remove(executionInfo);
-      return new DataBlockIteratorImpl(executionInfo, fileReader, batchSize, queryStatisticsModel,
-          execService);
+      return getDataBlockIterator(executionInfo);
     }
     return null;
   }
@@ -310,6 +311,46 @@ public abstract class AbstractDetailQueryResultIterator<E> extends CarbonIterato
     } catch (IOException e) {
       LOGGER.error(e);
     }
+  }
+
+  protected QueryModel queryModel;
+  /**
+   * number of row need to return
+   */
+  protected int limit = -1;
+
+  protected boolean limitFlg = false;
+
+  public synchronized void decreaseLimit(int count) {
+    if (limitFlg) {
+      // LOGGER.info("limit before: " + limit);
+      // LOGGER.info("count: " + count);
+      limit = limit - count;
+      if (dataBlockIterator != null) {
+        dataBlockIterator.updateBatchSize(limit);
+      }
+
+      // LOGGER.info("limit after: " + limit);
+    }
+
+  }
+
+  public void resetBatchSizeByLimit(int limitValue) {
+    limit = limitValue;
+    // process limit push down
+    if (limit > 0) {
+      limitFlg = true;
+
+      if (batchSize > limit) {
+
+        batchSize = limit;
+      }
+    }
+  }
+
+  protected DataBlockIteratorImpl getDataBlockIterator(BlockExecutionInfo executionInfo) {
+    return new DataBlockIteratorImpl(executionInfo, fileReader, batchSize, queryStatisticsModel,
+        execService, null);
   }
 
 }

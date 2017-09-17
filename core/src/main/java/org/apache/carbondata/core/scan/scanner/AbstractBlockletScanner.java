@@ -59,7 +59,7 @@ public abstract class AbstractBlockletScanner implements BlockletScanner {
   @Override public AbstractScannedResult scanBlocklet(BlocksChunkHolder blocksChunkHolder)
       throws IOException, FilterUnsupportedException {
     long startTime = System.currentTimeMillis();
-    AbstractScannedResult scannedResult = new NonFilterQueryScannedResult(blockExecutionInfo);
+    AbstractScannedResult scannedResult = getScannedResult();
     QueryStatistic totalBlockletStatistic = queryStatisticsModel.getStatisticsTypeAndObjMap()
         .get(QueryStatisticsConstants.TOTAL_BLOCKLET_NUM);
     totalBlockletStatistic.addCountStatistic(QueryStatisticsConstants.TOTAL_BLOCKLET_NUM,
@@ -168,4 +168,10 @@ public abstract class AbstractBlockletScanner implements BlockletScanner {
     // For non filter it is always true
     return true;
   }
+
+  protected AbstractScannedResult getScannedResult() {
+    AbstractScannedResult scannedResult = new NonFilterQueryScannedResult(blockExecutionInfo);
+    return scannedResult;
+  }
+
 }

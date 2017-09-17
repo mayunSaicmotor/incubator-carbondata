@@ -22,18 +22,21 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.carbondata.core.constants.CarbonCommonConstants;
 import org.apache.carbondata.core.metadata.AbsoluteTableIdentifier;
 import org.apache.carbondata.core.metadata.datatype.DataType;
 import org.apache.carbondata.core.util.CarbonProperties;
 import org.apache.carbondata.core.util.CarbonUtil;
-import org.apache.carbondata.hadoop.CarbonInputFormat;
-import org.apache.carbondata.hadoop.CarbonProjection;
 import org.apache.carbondata.core.scan.expression.ColumnExpression;
 import org.apache.carbondata.core.scan.expression.Expression;
 import org.apache.carbondata.core.scan.expression.LiteralExpression;
 import org.apache.carbondata.core.scan.expression.conditional.EqualToExpression;
+import org.apache.carbondata.core.scan.model.QueryDimension;
+import org.apache.carbondata.hadoop.CarbonInputFormat;
+import org.apache.carbondata.hadoop.CarbonProjection;
 import org.apache.carbondata.hadoop.test.util.StoreCreator;
 
 import junit.framework.TestCase;
@@ -48,6 +51,8 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import org.junit.Assert;
 import org.junit.Test;
+
+import junit.framework.TestCase;
 
 public class CarbonInputMapperTest extends TestCase {
 
@@ -70,7 +75,7 @@ public class CarbonInputMapperTest extends TestCase {
       carbonProjection.addColumn("phonetype");
       carbonProjection.addColumn("serialname");
       carbonProjection.addColumn("salary");
-      runJob(outPath, carbonProjection, null);
+      runJob(outPath, carbonProjection, null, null, null);
       Assert.assertEquals("Count lines are not matching", 1000, countTheLines(outPath));
       Assert.assertEquals("Column count are not matching", 7, countTheColumns(outPath));
     } catch (Exception e) {
@@ -87,7 +92,7 @@ public class CarbonInputMapperTest extends TestCase {
       carbonProjection.addColumn("ID");
       carbonProjection.addColumn("country");
       carbonProjection.addColumn("salary");
-      runJob(outPath, carbonProjection, null);
+      runJob(outPath, carbonProjection, null, null, null);
 
       Assert.assertEquals("Count lines are not matching", 1000, countTheLines(outPath));
       Assert.assertEquals("Column count are not matching", 3, countTheColumns(outPath));
@@ -107,7 +112,7 @@ public class CarbonInputMapperTest extends TestCase {
       Expression expression =
           new EqualToExpression(new ColumnExpression("country", DataType.STRING),
               new LiteralExpression("france", DataType.STRING));
-      runJob(outPath, carbonProjection, expression);
+      runJob(outPath, carbonProjection, expression, null, null);
       Assert.assertEquals("Count lines are not matching", 101, countTheLines(outPath));
       Assert.assertEquals("Column count are not matching", 3, countTheColumns(outPath));
     } catch (Exception e) {
@@ -170,7 +175,8 @@ public class CarbonInputMapperTest extends TestCase {
     }
   }
 
-  private void runJob(String outPath, CarbonProjection projection, Expression filter)
+  private void runJob(String outPath, CarbonProjection projection, Expression filter,
+      Integer limit, List<QueryDimension> sortMdkDims)
       throws Exception {
 
     Job job = Job.getInstance(new Configuration());
@@ -188,6 +194,17 @@ public class CarbonInputMapperTest extends TestCase {
     if (filter != null) {
       CarbonInputFormat.setFilterPredicates(job.getConfiguration(), filter);
     }
+    if (limit != null) {
+      CarbonInputFormat.setLimitExpression(job.getConfiguration(), limit);
+    } else {
+      CarbonInputFormat.setLimitExpression(job.getConfiguration(), Integer.MAX_VALUE);
+    }
+    if (sortMdkDims != null) {
+      CarbonInputFormat.setSortMdkExpression(job.getConfiguration(), sortMdkDims);
+    } else {
+      CarbonInputFormat.setSortMdkExpression(job.getConfiguration(), new ArrayList<QueryDimension>(0));
+    }
+
     FileInputFormat.addInputPath(job, new Path(abs.getTablePath()));
     CarbonUtil.deleteFoldersAndFiles(new File(outPath + "1"));
     FileOutputFormat.setOutputPath(job, new Path(outPath + "1"));
@@ -196,6 +213,6 @@ public class CarbonInputMapperTest extends TestCase {
   }
 
   public static void main(String[] args) throws Exception {
-    new CarbonInputMapperTest().runJob("target/output", null, null);
+    new CarbonInputMapperTest().runJob("target/output", null, null, null, null);
   }
 }

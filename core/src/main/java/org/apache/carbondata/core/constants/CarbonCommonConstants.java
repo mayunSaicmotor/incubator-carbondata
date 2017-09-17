@@ -1351,6 +1351,8 @@ public final class CarbonCommonConstants {
 
   public static final String USE_DISTRIBUTED_DATAMAP_DEFAULT = "false";
 
+  public static final boolean ORDER_BY_MDK_OPTIMIZATION_FLG = true;
+
   private CarbonCommonConstants() {
   }
 }

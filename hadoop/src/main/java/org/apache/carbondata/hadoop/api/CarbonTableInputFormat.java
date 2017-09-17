@@ -45,6 +45,7 @@ import org.apache.carbondata.core.scan.filter.SingleTableProvider;
 import org.apache.carbondata.core.scan.filter.TableProvider;
 import org.apache.carbondata.core.scan.filter.resolver.FilterResolverIntf;
 import org.apache.carbondata.core.scan.model.CarbonQueryPlan;
+import org.apache.carbondata.core.scan.model.QueryDimension;
 import org.apache.carbondata.core.scan.model.QueryModel;
 import org.apache.carbondata.core.stats.QueryStatistic;
 import org.apache.carbondata.core.stats.QueryStatisticsConstants;
@@ -104,7 +105,8 @@ public class CarbonTableInputFormat<T> extends FileInputFormat<Void, T> {
   private static final String CARBON_READ_SUPPORT = "mapreduce.input.carboninputformat.readsupport";
   private static final String CARBON_CONVERTER = "mapreduce.input.carboninputformat.converter";
   private static final String DATA_MAP_DSTR = "mapreduce.input.carboninputformat.datamapdstr";
-
+  private static final String LIMIT_PREDICATE = "mapreduce.input.carboninputformat.limit";
+  private static final String SORT_MDK_PREDICATE = "mapreduce.input.carboninputformat.sortmdk";
   // a cache for carbon table, it will be used in task side
   private CarbonTable carbonTable;
 
@@ -590,6 +592,8 @@ public class CarbonTableInputFormat<T> extends FileInputFormat<Void, T> {
     FilterResolverIntf filterIntf = CarbonInputFormatUtil
         .resolveFilter(filter, carbonTable.getAbsoluteTableIdentifier(), tableProvider);
     queryModel.setFilterExpressionResolverTree(filterIntf);
+    queryModel.setLimit(getLimitExpression(configuration));
+    queryModel.setSortMdkDimensions(getSortMdkExpression(configuration), carbonTable);
 
     // update the file level index store if there are invalid segment
     if (inputSplit instanceof CarbonMultiBlockSplit) {
@@ -737,4 +741,61 @@ public class CarbonTableInputFormat<T> extends FileInputFormat<Void, T> {
     }
     return (DataTypeConverter) ObjectSerializationUtil.convertStringToObject(converter);
   }
+
+  /**
+   * It sets unresolved limit expression.
+   *
+   * @param configuration
+   * @param filterExpression
+   */
+  public static void setLimitExpression(Configuration configuration, int limit) {
+
+    try {
+      configuration.set(LIMIT_PREDICATE, Integer.toString(limit));
+    } catch (Exception e) {
+      throw new RuntimeException("Error while setting sorts expression to Job", e);
+    }
+  }
+
+  /**
+   * It sets unresolved sorts expression.
+   *
+   * @param configuration
+   * @param filterExpression
+   */
+  public static void setSortMdkExpression(Configuration configuration,
+      List<QueryDimension> sortMdkDimensions) {
+    if (sortMdkDimensions == null) {
+      sortMdkDimensions = new ArrayList<QueryDimension>(0);
+    }
+    try {
+      String sortsString = ObjectSerializationUtil.convertObjectToString(sortMdkDimensions);
+      configuration.set(SORT_MDK_PREDICATE, sortsString);
+    } catch (Exception e) {
+      throw new RuntimeException("Error while setting sorts expression to Job", e);
+    }
+  }
+
+
+  private List<QueryDimension> getSortMdkExpression(Configuration configuration) {
+    try {
+      String sortsExprString = configuration.get(SORT_MDK_PREDICATE);
+      if (sortsExprString == null) {
+        return new ArrayList<QueryDimension>(0);
+      }
+      Object sortMdkDimensions = ObjectSerializationUtil.convertStringToObject(sortsExprString);
+      return (List<QueryDimension>) sortMdkDimensions;
+    } catch (IOException e) {
+      throw new RuntimeException("Error while reading sorts expression", e);
+    }
+  }
+
+  private int getLimitExpression(Configuration configuration) {
+    String limit = configuration.get(LIMIT_PREDICATE);
+    if (limit == null) {
+      return -1;
+    }
+    return Integer.parseInt(limit);
+  }
+
 }

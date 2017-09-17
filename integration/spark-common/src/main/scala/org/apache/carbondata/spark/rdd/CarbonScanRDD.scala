@@ -26,6 +26,7 @@ import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.mapreduce._
 import org.apache.hadoop.mapreduce.task.TaskAttemptContextImpl
 import org.apache.spark._
+import org.apache.spark.sql.catalyst.expressions.NamedExpression
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.hive.DistributionUtil
 
@@ -33,8 +34,10 @@ import org.apache.carbondata.common.logging.LogServiceFactory
 import org.apache.carbondata.core.constants.CarbonCommonConstants
 import org.apache.carbondata.core.datastore.block.Distributable
 import org.apache.carbondata.core.metadata.AbsoluteTableIdentifier
+import org.apache.carbondata.core.metadata.schema.table.CarbonTable
 import org.apache.carbondata.core.metadata.schema.table.TableInfo
 import org.apache.carbondata.core.scan.expression.Expression
+import org.apache.carbondata.core.scan.model.QueryDimension
 import org.apache.carbondata.core.scan.model.QueryModel
 import org.apache.carbondata.core.stats.{QueryStatistic, QueryStatisticsConstants, QueryStatisticsRecorder}
 import org.apache.carbondata.core.util.{CarbonProperties, CarbonTimeStatisticsFactory, TaskMetricsMap}
@@ -55,7 +58,10 @@ class CarbonScanRDD(
     filterExpression: Expression,
     identifier: AbsoluteTableIdentifier,
     serializedTableInfo: Array[Byte],
-    @transient tableInfo: TableInfo, inputMetricsStats: InitInputMetrics)
+    @transient tableInfo: TableInfo, inputMetricsStats: InitInputMetrics,
+    @transient carbonTable: CarbonTable,
+     limit: Int = -1,
+     sortMdkDimensions: Seq[QueryDimension] = Seq[QueryDimension]())
   extends CarbonRDDWithTableInfo[InternalRow](sc, Nil, serializedTableInfo) {
 
   private val queryId = sparkContext.getConf.get("queryId", System.nanoTime() + "")
@@ -280,6 +286,8 @@ class CarbonScanRDD(
         CarbonCommonConstants.USE_DISTRIBUTED_DATAMAP_DEFAULT).toBoolean) {
       CarbonTableInputFormat.setDataMapJob(conf, new SparkDataMapJob)
     }
+    CarbonTableInputFormat.setLimitExpression(conf, limit)
+    CarbonTableInputFormat.setSortMdkExpression(conf, sortMdkDimensions.asJava)
     format
   }
 
